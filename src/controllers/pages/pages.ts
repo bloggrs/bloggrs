@@ -1,24 +1,24 @@
 import http, { get } from "../../fetch"
 import qs from "../../qs";
 
-type CategoriesRequestOptions = {
+type PagesRequestOptions = {
     page: number;
     pageSize: number;
     status: string;
     query: string
 }
 
-export const categories = ({ serverUrl, BlogId }: any) => ({
-    getCategories: async (options: CategoriesRequestOptions={
+export const pages = ({ serverUrl, BlogId }: any) => ({
+    getPages: async (options: PagesRequestOptions={
         page: 1,
         pageSize: 3,
         status: undefined,
         query: undefined
     }): Promise<any> => {
         const query: string = qs.stringify(options)
-        const endpoint = serverUrl + `/blogs/${BlogId}/categories?${query}`
+        const endpoint = serverUrl + `/blogs/${BlogId}/pages?${query}`
         console.log({query, endpoint, serverUrl, BlogId})
-        const { data: { categories } } = await get<any>(endpoint) 
-        return categories;
+        const { data: { pages } } = await get<any>(endpoint) 
+        return pages;
     }
 })
