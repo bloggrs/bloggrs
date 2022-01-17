@@ -1,4 +1,5 @@
 import { categories } from "./controllers/categories";
+import { general } from "./controllers/general";
 import { pages } from "./controllers/pages";
 import { posts } from "./controllers/posts";
 import http, { post, Todo } from "./fetch";
@@ -11,7 +12,7 @@ import http, { post, Todo } from "./fetch";
 export class Bloggrs {
   serverUrl = "http://localhost:5500/api/v1";
   apiKey = null;
-  BlogId = 1;
+  BlogId = null;
   blog = null;
   initialized = false;
   initPromise = null;
@@ -29,7 +30,8 @@ export class Bloggrs {
     await this._initialize(apiKey);
     return this;
   }
-  wrapper = obj => {
+  wrapper = func => {
+    const obj = func(this)
     const new_obj = {}
     Object.keys(obj).forEach(key => {
       const { initialized } = this;
@@ -37,15 +39,16 @@ export class Bloggrs {
         new_obj[key] = async (...args) => {
           console.warn(`Library not initialized yet, ${key} function call delayed.`)
           await this.initPromise;
-          return obj[key](...args)
+          return func(this)[key](...args)
         }
-      } else new_obj[key] = obj[key]
+      } else func(this)[key] = obj[key]
     })
     return new_obj
   }
-  categories: any = this.wrapper(categories(this))
-  posts: any = this.wrapper(posts(this))
-  pages: any = this.wrapper(pages(this))
+  categories: any = this.wrapper(categories)
+  posts: any = this.wrapper(posts)
+  pages: any = this.wrapper(pages)
+  general: any = this.wrapper(general)
 
   _initialize = async (apiKey) => {
     this.apiKey = apiKey;
@@ -55,10 +58,11 @@ export class Bloggrs {
     const { data: { blog } } = res;
     this.blog = blog;
     this.BlogId = blog.id;
-
+    alert(this.BlogId)
     this.categories = categories(this)
     this.posts = posts(this)
     this.pages = pages(this)
+    this.general = general(this)
   
   }
 }
