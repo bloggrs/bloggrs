@@ -17,7 +17,6 @@ export const categories = ({ serverUrl, BlogId }: any) => ({
     }): Promise<any> => {
         const query: string = qs.stringify(options)
         const endpoint = serverUrl + `/blogs/${BlogId}/categories?${query}`
-        console.log({query, endpoint, serverUrl, BlogId})
         const { data: { categories } } = await get<any>(endpoint) 
         return categories;
     }
