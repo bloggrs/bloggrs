@@ -1,7 +1,14 @@
 
 export default async function http<T>(path: string, config: RequestInit): Promise<T> {
   // config.body = JSON.stringify({ aa: "dsadadsa"})
-    const request = new Request(path, config)
+    const token = localStorage.getItem("bloggrs::token")
+    const request = new Request(path, {
+      ...config,
+      headers: {
+        ...(config.headers || {}),
+        ...(token ? { "Authorization": "Bearer " + token } : {})
+      }
+    })
     console.log(request)
     const response = await fetch(request)
   
@@ -18,7 +25,7 @@ export default async function http<T>(path: string, config: RequestInit): Promis
     return await http<T>(path, init)
   }
   
-  export async function post<T, U>(path: string, body: T, config?: RequestInit): Promise<U> {
+  export async function post<T, U>(path: string, body?: T, config?: RequestInit): Promise<U> {
     const init = {method: 'post', body: JSON.stringify(body), ...config}
     console.log({init,body})
     return await http<U>(path, init)

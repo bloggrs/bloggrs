@@ -1,3 +1,4 @@
+import { auth } from "./controllers/auth";
 import { categories } from "./controllers/categories";
 import { general } from "./controllers/general";
 import { pages } from "./controllers/pages";
@@ -16,11 +17,11 @@ export class Bloggrs {
   blog = null;
   initialized = false;
   initPromise = null;
-  
+
   constructor(apiKey) {
     this.initPromise = this.init(apiKey).catch(err => {
       console.error("Failed to initialize")
-    }) 
+    })
   }
   /**
   * Call this method first to set your authentication key.
@@ -49,6 +50,7 @@ export class Bloggrs {
   posts: any = this.wrapper(posts)
   pages: any = this.wrapper(pages)
   general: any = this.wrapper(general)
+  auth: any = this.wrapper(auth)
 
   _initialize = async (apiKey) => {
     this.apiKey = apiKey;
@@ -58,11 +60,11 @@ export class Bloggrs {
     const { data: { blog } } = res;
     this.blog = blog;
     this.BlogId = blog.id;
-    alert(this.BlogId)
     this.categories = categories(this)
     this.posts = posts(this)
     this.pages = pages(this)
     this.general = general(this)
-  
+    this.auth = auth(this)
+
   }
 }

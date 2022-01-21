@@ -1,4 +1,4 @@
-import http, { get } from "../../fetch"
+import http, { get, post } from "../../fetch"
 import qs from "../../qs";
 
 type PostsRequestOptions = {
@@ -19,5 +19,11 @@ export const posts = ({ serverUrl, BlogId }: any) => ({
         const endpoint = serverUrl + `/blogs/${BlogId}/posts?${query}`
         const { data: { posts } } = await get<any>(endpoint) 
         return posts;
+    },
+    likePostHandler: async ({ PostId, action }: any): Promise<any> => {
+        const endpoint = serverUrl + `/blogs/${BlogId}/posts/${PostId}/${action}`
+        const { data: { message } } = await post(endpoint) 
+        return message === "success"
+
     }
 })
