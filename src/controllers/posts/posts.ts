@@ -22,7 +22,7 @@ export const posts = ({ serverUrl, BlogId }: any) => ({
     },
     likePostHandler: async ({ PostId, action }: any): Promise<any> => {
         const endpoint = serverUrl + `/blogs/${BlogId}/posts/${PostId}/${action}`
-        const { data: { message } } = await post(endpoint) 
+        const { message }: any = await post(endpoint) 
         return message === "success"
 
     }

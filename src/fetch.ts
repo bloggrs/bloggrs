@@ -1,12 +1,11 @@
 
 export default async function http<T>(path: string, config: RequestInit): Promise<T> {
-  // config.body = JSON.stringify({ aa: "dsadadsa"})
     const token = localStorage.getItem("bloggrs::token")
     const request = new Request(path, {
       ...config,
       headers: {
         ...(config.headers || {}),
-        ...(token ? { "Authorization": "Bearer " + token } : {})
+        ...(Boolean(token) ? { "Authorization": "Bearer " + token } : {})
       }
     })
     console.log(request)
