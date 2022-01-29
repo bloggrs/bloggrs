@@ -1,5 +1,6 @@
-import http, { get } from "../../fetch"
-import qs from "../../qs";
+import http, { get } from '../../fetch'
+import qs from '../../qs';
+import _localStorage from '../../localStorage'
 
 // type CategoriesRequestOptions = {
 //     page: number;
@@ -13,7 +14,7 @@ export const auth = ({ serverUrl, BlogId }: any) => ({
         // const query: string = qs.stringify(options)
         const endpoint = serverUrl + `/auth`
         const { data: { user, token } } = await get<any>(endpoint);
-        localStorage.setItem("bloggrs::token", token)
+        _localStorage.setItem('bloggrs::token', token)
         return { user, token };
     }
-})
+});

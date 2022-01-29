@@ -1,9 +1,9 @@
-import { auth } from "./controllers/auth";
-import { categories } from "./controllers/categories";
-import { general } from "./controllers/general";
-import { pages } from "./controllers/pages";
-import { posts } from "./controllers/posts";
-import http, { post, Todo } from "./fetch";
+import { auth } from './controllers/auth';
+import { categories } from './controllers/categories';
+import { general } from './controllers/general';
+import { pages } from './controllers/pages';
+import { posts } from './controllers/posts';
+import http, { post, Todo } from './fetch';
 
 
 /**
@@ -11,7 +11,7 @@ import http, { post, Todo } from "./fetch";
  */
 
 export class Bloggrs {
-  serverUrl = "http://localhost:5500/api/v1";
+  serverUrl = 'http://localhost:5500/api/v1';
   apiKey = null;
   BlogId = null;
   blog = null;
@@ -20,7 +20,7 @@ export class Bloggrs {
 
   constructor(apiKey) {
     this.initPromise = this.init(apiKey).catch(err => {
-      console.error("Failed to initialize")
+      console.error('Failed to initialize')
     })
   }
   /**
@@ -54,17 +54,17 @@ export class Bloggrs {
 
   _initialize = async (apiKey) => {
     this.apiKey = apiKey;
-    const res: any = await post(this.serverUrl + "/blogs/api_key", { api_key: apiKey }, {
+    const res: any = await post(this.serverUrl + '/blogs/api_key', { api_key: apiKey }, {
       headers: {'Content-Type': 'application/json'},
     });
     const { data: { blog } } = res;
     this.blog = blog;
     this.BlogId = blog.id;
-    this.categories = categories(this)
-    this.posts = posts(this)
-    this.pages = pages(this)
-    this.general = general(this)
-    this.auth = auth(this)
+    this.categories = categories(this);
+    this.posts = posts(this);
+    this.pages = pages(this);
+    this.general = general(this);
+    this.auth = auth(this);
 
   }
 }
