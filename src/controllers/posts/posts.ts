@@ -17,8 +17,8 @@ export const posts = ({ serverUrl, BlogId }: any) => ({
     },
     getPostComments: async (PostId: any): Promise<any> => {
         const endpoint = serverUrl + `/blogs/${BlogId}/posts/${PostId}/comments`
-        const { data: { comments } } = await get<any>(endpoint) 
-        return comments;
+        const { data: result } = await get<any>(endpoint) 
+        return result;
     },
     getPosts: async (options: PostsRequestOptions={
         page: 1,
