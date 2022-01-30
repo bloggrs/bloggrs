@@ -2,6 +2,7 @@ import { auth } from './controllers/auth';
 import { categories } from './controllers/categories';
 import { general } from './controllers/general';
 import { pages } from './controllers/pages';
+import { postcomments } from './controllers/postcomments';
 import { posts } from './controllers/posts';
 import http, { post, Todo } from './fetch';
 
@@ -48,6 +49,7 @@ export class Bloggrs {
   }
   categories: any = this.wrapper(categories)
   posts: any = this.wrapper(posts)
+  postcomments: any = this.wrapper(postcomments)
   pages: any = this.wrapper(pages)
   general: any = this.wrapper(general)
   auth: any = this.wrapper(auth)
@@ -62,6 +64,7 @@ export class Bloggrs {
     this.BlogId = blog.id;
     this.categories = categories(this);
     this.posts = posts(this);
+    this.postcomments = postcomments(this);
     this.pages = pages(this);
     this.general = general(this);
     this.auth = auth(this);
