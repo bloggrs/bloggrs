@@ -12,11 +12,18 @@ type PostsRequestOptions = {
 export const posts = ({ serverUrl, BlogId }: any) => ({
     getPost: async (PostId: any): Promise<any> => {
         const endpoint = serverUrl + `/blogs/${BlogId}/posts/${PostId}`
-        const { data: { post } } = await get<any>(endpoint) 
+        const { data: { post } } = await get<any>(endpoint)
         return post;
     },
-    getPostComments: async (PostId: any): Promise<any> => {
-        const endpoint = serverUrl + `/blogs/${BlogId}/posts/${PostId}/comments`
+    getPostComments: async (PostId: any, options: PostsRequestOptions={
+        page: 1,
+        pageSize: 3,
+        query: undefined,
+        categories: undefined,
+        status: undefined
+    }): Promise<any> => {
+        const query: string = qs.stringify(options)
+        const endpoint = serverUrl + `/blogs/${BlogId}/posts/${PostId}/comments?${query}`
         const { data: result } = await get<any>(endpoint) 
         return result;
     },

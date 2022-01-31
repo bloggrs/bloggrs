@@ -1,0 +1,1 @@
+export { blogcontacts } from './blogcontacts';
