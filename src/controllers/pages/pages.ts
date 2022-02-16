@@ -20,5 +20,12 @@ export const pages = ({ serverUrl, BlogId }: any) => ({
         console.log({query, endpoint, serverUrl, BlogId})
         const { data: { pages } } = await get<any>(endpoint) 
         return pages;
+    },
+    getPageBySlug: async ({ slug }: any={
+        slug: undefined,
+    }): Promise<any> => {
+        const endpoint = serverUrl + `/blogs/${BlogId}/pages/${slug}`
+        const { data: { page } } = await get<any>(endpoint) 
+        return page;
     }
 })

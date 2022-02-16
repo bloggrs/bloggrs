@@ -70,7 +70,7 @@ export class Bloggrs {
       });
     }
     const { data: { blog } } = res;
-    console.warn({ blog });
+    console.log({ blog })
     this.blog = blog;
     this.BlogId = blog.id;
     this.categories = categories(this);
