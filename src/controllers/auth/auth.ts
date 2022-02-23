@@ -12,11 +12,7 @@ export const auth = ({ serverUrl, BlogId }: any) => ({
     getAuth: async (options: any): Promise<any> => {
         // const query: string = qs.stringify(options)
         const endpoint = serverUrl + `/auth`
-        const { data: { user, token } } = await get<any>(endpoint, { 
-            headers: { 
-                "Authorization": "Bearer " + localStorage.getItem("bloggrs::token")
-            }
-        }) 
+        const { data: { user, token } } = await get<any>(endpoint);
         localStorage.setItem("bloggrs::token", token)
         return { user, token };
     }
