@@ -5,15 +5,34 @@ type PostsRequestOptions = {
     page: number;
     pageSize: number;
     status: string;
-    query: string
+    query: string;
+    categories: string;
 }
 
 export const posts = ({ serverUrl, BlogId }: any) => ({
+    getPost: async (PostId: any): Promise<any> => {
+        const endpoint = serverUrl + `/blogs/${BlogId}/posts/${PostId}`
+        const { data: { post } } = await get<any>(endpoint)
+        return post;
+    },
+    getPostComments: async (PostId: any, options: PostsRequestOptions={
+        page: 1,
+        pageSize: 3,
+        query: undefined,
+        categories: undefined,
+        status: undefined
+    }): Promise<any> => {
+        const query: string = qs.stringify(options)
+        const endpoint = serverUrl + `/blogs/${BlogId}/posts/${PostId}/comments?${query}`
+        const { data: result } = await get<any>(endpoint) 
+        return result;
+    },
     getPosts: async (options: PostsRequestOptions={
         page: 1,
         pageSize: 3,
-        status: undefined,
-        query: undefined
+        query: undefined,
+        categories: undefined,
+        status: undefined
     }): Promise<any> => {
         const query: string = qs.stringify(options)
         const endpoint = serverUrl + `/blogs/${BlogId}/posts?${query}`
@@ -24,6 +43,5 @@ export const posts = ({ serverUrl, BlogId }: any) => ({
         const endpoint = serverUrl + `/blogs/${BlogId}/posts/${PostId}/${action}`
         const { message }: any = await post(endpoint) 
         return message === "success"
-
     }
 })

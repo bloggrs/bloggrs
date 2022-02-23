@@ -1,0 +1,1 @@
+export { postcomments } from './postcomments';
