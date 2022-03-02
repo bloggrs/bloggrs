@@ -4,8 +4,8 @@ Node.js client for Bloggrs API
 
 ![](https://user-images.githubusercontent.com/24304449/156424453-7fce7207-2cac-404d-8772-0d64670886e4.png)
 
-[![NPM Version](https://img.shields.io/npm/v/twitter-api-client)](https://www.npmjs.com/package/twitter-api-client)
-![Build Status](https://github.com/FeedHive/twitter-api-client/workflows/build/badge.svg)
+[![NPM Version](https://img.shields.io/npm/v/bloggrs-api-client)](https://www.npmjs.com/package/bloggrs-api-client)
+![Build Status](https://github.com/FeedHive/bloggrs-api-client/workflows/build/badge.svg)
 
 ## Table of content
 
@@ -18,17 +18,17 @@ Node.js client for Bloggrs API
 
 ## Features
 
-☑️ Includes 90% of the **official Twitter API** endpoints.  
+☑️ Includes 90% of the **official Bloggrs API** endpoints.  
 ☑️ **Promise-based!** No ugly callbacks.  
 ☑️ **Fully typed!** Both for query parameters and responses.  
 ☑️ Inbuilt in-memory **cache** for rate-limit friendly usage.
 
 ## Getting Started
 
-### Get your Twitter credentials
+### Get your Bloggrs credentials
 
-You will need to create a set of Twitter developer credentials from your Twitter Developer account.  
-If you don't have one already, apply for a developer account [here](https://developer.twitter.com/).  
+You will need to create a set of Bloggrs developer credentials from your Bloggrs Developer account.  
+If you don't have one already, apply for a developer account [here](https://developer.bloggrs.com/).  
 It takes about 5 minutes.
 
 ### Install
@@ -42,7 +42,7 @@ npm i bloggrs-api-client
 ```javascript
 import { BloggrsClient } from 'bloggrs-api-client';
 
-const bloggrsClient = new TwitterClient({
+const bloggrsClient = new BloggrsClient({
   apiKey: '<YOUR-BLOGGERS-API-KEY>',
   apiSecret: '<YOUR-BLOGGRS-API-SECRET>',
   accessToken: '<YOUR-BLOGGRS-ACCESS-TOKEN>',
@@ -89,7 +89,7 @@ This project is licensed under the [MIT License](https://github.com/bloggrs/blog
 
 ## Get Help
 
-- Reach out on [Twitter](https://twitter.com/gjergjk71)
+- Reach out on [Bloggrs](https://bloggrs.com/gjergjk71)
 - Open an [issue on GitHub](https://github.com/bloggrs/bloggrs-api-client/issues/new)
 
 ## Contribute
