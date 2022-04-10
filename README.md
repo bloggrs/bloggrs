@@ -1,118 +1,104 @@
-# TypeScript Library Starter Lite
+# Bloggrs API Client
 
-Stripped down version of TypeScript Library Starter: <https://github.com/alexjoverm/typescript-library-starter>
+Node.js client for Bloggrs API
 
-[![Build Status](https://travis-ci.org/tonysneed/typescript-library-starter-lite.svg)](https://travis-ci.org/tonysneed/typescript-library-starter-lite)
+![](https://user-images.githubusercontent.com/24304449/156424453-7fce7207-2cac-404d-8772-0d64670886e4.png)
 
-### Differences
+[![NPM Version](https://img.shields.io/npm/v/bloggrs-api-client)](https://www.npmjs.com/package/bloggrs-api-client)
+![Build Status](https://github.com/FeedHive/bloggrs-api-client/workflows/build/badge.svg)
 
-All the goodness of TypeScript Library Starter, but without:
-  - Automatic code formatting with [Prettier](https://github.com/prettier/prettier)
-  - Conventional commits with [Commitizen](https://github.com/commitizen/cz-cli)
-  - Automatic releases with [Semantic Release](https://github.com/semantic-release/semantic-release) and [Conventional Changelog](https://github.com/conventional-changelog/conventional-changelog)
+## Table of content
 
-The following additions are included:
-  - Linting with [Codelyzer](http://codelyzer.com) with [Angular Style Guide](https://angular.io/guide/styleguide) rules
-  - Debugging and task configurations for [Visual Studio Code](https://code.visualstudio.com)
-  - Key bindings for Mac and Windows versions of VS Code
-    + To use go to Preference, Keyboard Shortcuts, then paste into keybindings.json file
-  - Placement of spec files next to source code
-    + Models for tests can be placed in a models folder
-    + Models named with .spec.ts suffix are excluded from the docs
-  - TypeScript configured to target [ES2015](https://babeljs.io/learn-es2015/) to support advanced features
-    + You can change this to ES5 to support [Internet Explorer 11](http://kangax.github.io/compat-table/es5/#ie11)
+- [Features](#features)
+- [**Getting Started**](#getting-started)
+- [Usage](#usage)
+- [License](#license)
+- [Get Help](#get-help)
+- [Contribute](#contribute)
 
-### Usage
+## Features
 
-```bash
-git clone https://github.com/tonysneed/typescript-library-starter-lite.git YOURFOLDERNAME
-cd YOURFOLDERNAME
+☑️ Includes 90% of the **official Bloggrs API** endpoints.  
+☑️ **Promise-based!** No ugly callbacks.  
+☑️ **Fully typed!** Both for query parameters and responses.  
+☑️ Inbuilt in-memory **cache** for rate-limit friendly usage.
 
-# Run npm install and write your library name when asked. That's all!
-npm install
+## Getting Started
+
+### Get your Bloggrs credentials
+
+You will need to create a set of Bloggrs developer credentials from your Bloggrs Developer account.  
+If you don't have one already, apply for a developer account [here](https://developer.bloggrs.com/).  
+It takes about 5 minutes.
+
+### Install
+
+```console
+npm i bloggrs-api-client
 ```
 
-**Start coding!** `package.json` and entry files are already set up for you, so don't worry about linking to your main file, typings, etc. Just keep those files with the same names.
+## Usage
 
-- It's recommended you use an extension for VS Code such as [JSDoc Comments](https://marketplace.visualstudio.com/items?itemName=stevencl.addDocComments), in order to add comments to your code that will be included in your generated docs.
+```javascript
+import { BloggrsClient } from 'bloggrs-api-client';
 
-### Features
+const bloggrsClient = new BloggrsClient({
+  apiKey: '<YOUR-BLOGGERS-API-KEY>',
+  apiSecret: '<YOUR-BLOGGRS-API-SECRET>',
+  accessToken: '<YOUR-BLOGGRS-ACCESS-TOKEN>',
+  accessTokenSecret: '<YOUR-BLOGGRS-ACCESS-TOKEN-SECRET>',
+});
 
- - Zero-setup. After running `npm install` things will be setup for you :wink:
- - **[RollupJS](https://rollupjs.org/)** for multiple optimized bundles following the [standard convention](http://2ality.com/2017/04/setting-up-multi-platform-packages.html) and [Tree-shaking](https://alexjoverm.github.io/2017/03/06/Tree-shaking-with-Webpack-2-TypeScript-and-Babel/).
- - Tests, coverage and interactive watch mode using **[Jest](http://facebook.github.io/jest/)**
- - **Docs automatic generation and deployment** to `gh-pages`, using **[TypeDoc](http://typedoc.org/)**
- - Automatic types `(*.d.ts)` file generation
- - **[Travis](https://travis-ci.org)** integration and **[Coveralls](https://coveralls.io/)** report
+// Search for a user
+const data = await bloggrsClient.accountsAndUsers.usersSearch({ q: 'bloggrsDev' });
 
-### Excluding peerDependencies
+// Get message event by Id
+const data = await bloggrsClient.directMessages.directMessagesEventsShow({ id: '1234' });
 
-On library development, one might want to set some peer dependencies, and thus remove those from the final bundle. You can see in [Rollup docs](https://rollupjs.org/#peer-dependencies) how to do that.
+// Get most recent 25 retweets of a tweet
+const data = await bloggrsClient.tweets.statusesRetweetsById({ id: '12345', count: 25 });
 
-The good news is here is setup for you, you only must include the dependency name in `external` property within `rollup.config.js`. For example, if you wanna exclude `lodash`, just write there `external: ['lodash']`.
-
-### NPM scripts
-
- - `npm t`: Run test suite
- - `npm start`: Runs `npm run build` in watch mode
- - `npm run test:watch`: Run test suite in [interactive watch mode](http://facebook.github.io/jest/docs/cli.html#watch) **(Cmd + Shift + T)**
- - `npm run test:prod`: Run linting and generate coverage
- - `npm run build`: Generate bundles and typings, create docs **(Cmd + Shift + B)**
- - `npm run lint`: Lints code **(Ctrl + Shift + L)**
-
-### Automatic CI builds and Docs generation
-
-_**Prerequisites**: you need to create accounts for:_
- - [Travis CI](https://travis-ci.org/)
- - [NPM](https://www.npmjs.com/)
-
-After publishing your repo to GitHub, copy the clone URL and paste it into the `url` property of the `repository` section of your package.json file.
-
-Then log into Travis CI and add the repository to your account.
-
-Run the following command to prepare hooks and stuff:
-
-```bash
-npm run semantic-release-prepare
+// Get local trends
+const data = await bloggrsClient.trends.trendsAvailable();
 ```
 
-Follow the console instructions to install semantic release run it (answer NO to "Generate travis.yml").
+[See all available methods here](https://github.com/bloggrs/bloggrs/blob/main/REFERENCES.md).
 
-```bash
-npm install -g semantic-release-cli
-semantic-release-cli setup
-# IMPORTANT!! Answer NO to "Generate travis.yml" question. Is already prepared for you :P
+### Configuration
+
+`bloggrs-api-client` comes with an inbuilt in-memory cache.  
+The stale data is served by the cache-first principle.
+
+You can configure the caching behavior upon instantiation of the client:
+
+```javascript
+const bloggrsClient = new BloggrsClient({
+  apiKey: '<YOUR-BLOGGRS-API-KEY>',
+  apiSecret: '<YOUR-BLOGGRS-API-SECRET>',
+  accessToken: '<YOUR-BLOGGRS-ACCESS-TOKEN>',
+  accessTokenSecret: '<YOUR-BLOGGRS-ACCESS-TOKEN-SECRET>',
+  ttl: 120, // seconds. Defaults to 360
+  disableCache: true, // Disables the caching behavior. Defaults to 'false'
+  maxByteSize: 32000000, // Maximum (approximated) memory size for cache store. Defaults to 16000000.
+});
 ```
 
-You will be prompted for your Travis and GitHub credentials so that Travis CI can publish docs to GitHub Pages.
+## License
 
-> Note: Semantic release will ask for your your NPM credentials, but these will not be used because automatic releases are disabled.
+This project is licensed under the [MIT License](https://github.com/bloggrs/bloggrs-api-client/blob/main/LICENSE)
 
-After pushing your first commit to master, Travis CI will run a CI build that runs your tests and generates documentation for your library.
-  - After the CI build completes, you can go to the Settings for your repo to note the URL where your docs are published to GitHub Pages.
+## Get Help
 
-### Git Hooks
+- Reach out on [Bloggrs](https://bloggrs.com/gjergjk71)
+- Open an [issue on GitHub](https://github.com/bloggrs/bloggrs-api-client/issues/new)
 
-By default, there is a disabled git hook. It's set up when you run the `npm run semantic-release-prepare` script. They make sure:
- - Your build is not going fail in [Travis](https://travis-ci.org) (or your CI server), since it's runned locally before `git push`
+## Contribute
 
-### Manually Creating a Release and Publishing to NPM
+#### Issues
 
-When you're ready to publish a release on GitHub, just do it.
-  - You may want to follow a [branching model](http://nvie.com/posts/a-successful-git-branching-model) such as [GitFlow](https://datasift.github.io/gitflow/IntroducingGitFlow.html) or [GitHub Flow](https://help.github.com/articles/github-flow).
+In the case of a bug report, bugfix or a suggestions, please feel very free to open an issue.
 
-To publish to NPM manually, just follow their [instructions](https://docs.npmjs.com/getting-started/publishing-npm-packages).
+#### Pull request
 
-### FAQ
-
-#### What is `npm install` doing the first time runned?
-
-It runs the script `tools/init` which sets up everything for you. In short, it:
- - Configures RollupJS for the build, which creates the bundles.
- - Configures `package.json` (typings file, main file, etc)
- - Renames main library file in src
-
-## Credit and Further Information
-
-For more information about the complete TypeScript Library Starter by [@alexjoverm](https://twitter.com/alexjoverm), see the project GitHub [repo](https://github.com/alexjoverm/typescript-library-starter) and hist [blog post](https://dev.to/alexjoverm/write-a-library-using-typescript-library-starter) explaining how to use it.
-
+Pull requests are always welcome, and I'll do my best to do reviews as fast as I can.
+Please refer to the [contribution guide](https://github.com/bloggrs/bloggrs-api-client/blob/main/CONTRIBUTING.md) to see how to get started.
