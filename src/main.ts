@@ -80,6 +80,5 @@ export class Bloggrs {
     this.pages = pages(this);
     this.general = general(this);
     this.auth = auth(this);
-
   }
 }

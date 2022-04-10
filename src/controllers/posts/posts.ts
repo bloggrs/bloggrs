@@ -36,7 +36,7 @@ export const posts = ({ serverUrl, BlogId }: any) => ({
     }): Promise<any> => {
         const query: string = qs.stringify(options)
         const endpoint = serverUrl + `/blogs/${BlogId}/posts?${query}`
-        const { data: { posts } } = await get<any>(endpoint) 
+        const { data: { posts } } = await get<any>(endpoint)
         return posts;
     },
     likePostHandler: async ({ PostId, action }: any): Promise<any> => {
