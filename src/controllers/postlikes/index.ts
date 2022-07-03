@@ -1,0 +1,1 @@
+export { postlikes } from './postlikes';
