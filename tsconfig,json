@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+      "target": "es2020",
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "outDir": "./dist",
+      "rootDir": ".",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "resolveJsonModule": true,
+      "allowImportingTsExtensions": true,  
+      "emitDeclarationOnly": false,        
+      "noEmit": true,                      
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["src/*"],
+        "@bloggrs/*": [".bloggrs/*"]
+      }
+    },
+    "include": ["src/**/*", ".bloggrs/**/*"],
+    "exclude": ["node_modules"]
+  }

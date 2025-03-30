@@ -1,7 +1,14 @@
-import { BloggrsServer } from '../.bloggrs/core/server.ts';  // Note the .js extension
-import dotenv from 'dotenv';
+import { BloggrsServer } from '../.bloggrs/core/server';
 
-dotenv.config();
+const startServer = async () => {
+    try {
+        const server = new BloggrsServer();
+        await server.start(3000);
+        console.log('Server started successfully');
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
 
-const server = new BloggrsServer();
-server.start(Number(process.env.PORT) || 3000);
+startServer();
