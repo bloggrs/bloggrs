@@ -1,0 +1,4841 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model CssOptimizationConfig {
+  id                   String               @id
+  configId             String               @unique
+  minify               Boolean              @default(true)
+  purge                Boolean              @default(true)
+  autoprefixer         Boolean              @default(true)
+  combining            Boolean              @default(true)
+  extractCritical      Boolean              @default(false)
+  inlineStyles         Boolean              @default(false)
+  mediaQueries         String?              @db.LongText
+  vueAssetOptimization vueAssetOptimization @relation(fields: [configId], references: [id])
+}
+
+model FontOptimizationConfig {
+  id                   String                         @id
+  configId             String                         @unique
+  display              FontOptimizationConfig_display @default(SWAP)
+  preload              Boolean                        @default(true)
+  subset               Boolean                        @default(false)
+  unicode              String                         @db.LongText
+  woff2                Boolean                        @default(true)
+  woff                 Boolean                        @default(true)
+  ttf                  Boolean                        @default(false)
+  vueAssetOptimization vueAssetOptimization           @relation(fields: [configId], references: [id])
+}
+
+model ImageOptimizationConfig {
+  id                   String                              @id
+  configId             String                              @unique
+  quality              Int                                 @default(80)
+  maxWidth             Int?
+  maxHeight            Int?
+  format               String                              @default("jpg")
+  generateWebp         Boolean                             @default(true)
+  generateAvif         Boolean                             @default(false)
+  sizesConfig          String?                             @db.LongText
+  lazyLoad             Boolean                             @default(true)
+  placeholder          ImageOptimizationConfig_placeholder @default(BLUR)
+  vueAssetOptimization vueAssetOptimization                @relation(fields: [configId], references: [id])
+}
+
+model JsOptimizationConfig {
+  id                   String                         @id
+  configId             String                         @unique
+  minify               Boolean                        @default(true)
+  mangle               Boolean                        @default(true)
+  compress             Boolean                        @default(true)
+  splitting            Boolean                        @default(true)
+  chunks               String?                        @db.LongText
+  modern               Boolean                        @default(true)
+  legacy               Boolean                        @default(true)
+  sourceMap            JsOptimizationConfig_sourceMap @default(PRODUCTION)
+  vueAssetOptimization vueAssetOptimization           @relation(fields: [configId], references: [id])
+}
+
+model apiKeyLogs {
+  id        String   @id
+  apiKeyId  String
+  timestamp DateTime @default(now())
+  action    String
+  ip        String
+  userAgent String?
+  status    Int
+  apiKeys   apiKeys  @relation(fields: [apiKeyId], references: [id])
+
+  @@index([apiKeyId])
+  @@index([timestamp])
+}
+
+model apiKeys {
+  id          String       @id
+  userId      String
+  name        String
+  key         String       @unique
+  secret      String
+  type        apiKeys_type
+  scopes      String       @db.LongText
+  expiresAt   DateTime?
+  lastUsed    DateTime?
+  isActive    Boolean      @default(true)
+  usageLimit  Int?
+  usageCount  Int          @default(0)
+  instancesId String?
+  apiKeyLogs  apiKeyLogs[]
+  instances   instances?   @relation(fields: [instancesId], references: [id])
+  users       users        @relation(fields: [userId], references: [id])
+
+  @@index([instancesId], map: "apiKeys_instancesId_fkey")
+  @@index([userId])
+}
+
+model apiVersions {
+  id               String    @id
+  versionId        String
+  name             String
+  status           String    @default("BETA")
+  releaseDate      DateTime
+  endOfLife        DateTime?
+  specification    String    @db.LongText
+  baseUrl          String
+  endpoints        String    @db.LongText
+  isBreaking       Boolean   @default(false)
+  breakingChanges  String?   @db.LongText
+  migrationGuide   String?   @db.Text
+  minClientVersion String?
+  maxClientVersion String?
+  supportedAuth    String    @db.LongText
+  rateLimit        Int?
+  quotaLimit       Int?
+  documentation    String?   @db.Text
+  changelog        String?   @db.Text
+  requestCount     Int       @default(0)
+  errorRate        Float?
+  avgLatency       Float?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  deprecatedAt     DateTime?
+  versions         versions  @relation(fields: [versionId], references: [id])
+
+  @@unique([versionId, name])
+  @@index([endOfLife])
+  @@index([releaseDate])
+  @@index([status])
+  @@index([versionId])
+}
+
+model backupConfigurations {
+  id                  String                       @id
+  instanceId          String
+  name                String
+  type                backupConfigurations_type
+  schedule            String
+  retention           Int
+  isActive            Boolean                      @default(true)
+  storage             backupConfigurations_storage
+  settings            String                       @db.LongText
+  scope               String                       @db.LongText
+  excludes            String
+  instances           instances                    @relation(fields: [instanceId], references: [id])
+  backupExecutions    backupExecutions[]
+  backupNotifications backupNotifications[]
+
+  @@index([instanceId])
+}
+
+model backupEncryption {
+  id         String    @id
+  instanceId String    @unique
+  algorithm  String
+  keyType    String
+  publicKey  String?   @db.Text
+  keyId      String?
+  instances  instances @relation(fields: [instanceId], references: [id])
+}
+
+model backupExecutions {
+  id                   String                  @id
+  configId             String
+  startedAt            DateTime                @default(now())
+  completedAt          DateTime?
+  status               backupExecutions_status
+  size                 BigInt?
+  checksum             String?
+  location             String
+  metadata             String                  @db.LongText
+  log                  String?                 @db.Text
+  backupConfigurations backupConfigurations    @relation(fields: [configId], references: [id])
+  backupFiles          backupFiles[]
+  backupRestores       backupRestores[]
+
+  @@index([configId])
+  @@index([status])
+}
+
+model backupFiles {
+  id               String           @id
+  backupId         String
+  path             String
+  size             BigInt
+  checksum         String
+  type             String
+  backupExecutions backupExecutions @relation(fields: [backupId], references: [id])
+
+  @@index([backupId])
+}
+
+model backupMonitoring {
+  id         String    @id
+  instanceId String
+  metric     String
+  value      Float
+  timestamp  DateTime  @default(now())
+  metadata   String?   @db.LongText
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model backupNotifications {
+  id                   String                   @id
+  configId             String
+  type                 backupNotifications_type
+  channel              String
+  recipients           String                   @db.LongText
+  settings             String?                  @db.LongText
+  backupConfigurations backupConfigurations     @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+}
+
+model backupRestores {
+  id                  String                @id
+  backupId            String
+  startedAt           DateTime              @default(now())
+  completedAt         DateTime?
+  status              backupRestores_status
+  options             String                @db.LongText
+  log                 String?               @db.Text
+  backupExecutions    backupExecutions      @relation(fields: [backupId], references: [id])
+  backupVerifications backupVerifications[]
+
+  @@index([backupId])
+  @@index([status])
+}
+
+model backupVerifications {
+  id             String                     @id
+  restoreId      String
+  type           String
+  status         backupVerifications_status
+  details        String?                    @db.LongText
+  timestamp      DateTime                   @default(now())
+  backupRestores backupRestores             @relation(fields: [restoreId], references: [id])
+
+  @@index([restoreId])
+}
+
+model backups {
+  id            String    @id
+  instanceId    String
+  name          String
+  description   String?   @db.Text
+  type          String
+  status        String
+  size          BigInt    @default(0)
+  content       String    @db.LongText
+  excludedPaths String    @db.LongText
+  checksum      String?
+  storageType   String
+  storagePath   String
+  compressed    Boolean   @default(true)
+  encrypted     Boolean   @default(false)
+  encryptionKey String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  duration      Int?
+  hasErrors     Boolean   @default(false)
+  errorLog      String?   @db.LongText
+  retryCount    Int       @default(0)
+  expiresAt     DateTime?
+  autoDelete    Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  deletedAt     DateTime?
+  instances     instances @relation(fields: [instanceId], references: [id])
+
+  @@index([createdAt])
+  @@index([instanceId])
+  @@index([status])
+  @@index([storageType])
+  @@index([type])
+}
+
+model blogPlugins {
+  id            String    @id
+  blogId        String
+  pluginId      String
+  isActive      Boolean   @default(true)
+  settings      String?   @db.LongText
+  version       String
+  priority      Int       @default(0)
+  permissions   String?   @db.LongText
+  restrictions  String?   @db.LongText
+  quotaLimit    Int?
+  usageCount    Int       @default(0)
+  loadTime      Float?
+  memoryUsage   Int?
+  errorCount    Int       @default(0)
+  lastError     String?   @db.LongText
+  lastSuccess   DateTime?
+  lastFailure   DateTime?
+  installedAt   DateTime  @default(now())
+  updatedAt     DateTime
+  lastUsedAt    DateTime?
+  deactivatedAt DateTime?
+  blogs         blogs     @relation(fields: [blogId], references: [id])
+  plugins       plugins   @relation(fields: [pluginId], references: [id])
+
+  @@unique([blogId, pluginId])
+  @@index([blogId])
+  @@index([isActive])
+  @@index([pluginId])
+  @@index([priority])
+}
+
+model blogcategories {
+  id              String    @id
+  blogId          String
+  name            String
+  slug            String
+  description     String?   @db.Text
+  parentId        String?
+  metaTitle       String?
+  metaDescription String?   @db.Text
+  keywords        String    @db.LongText
+  featuredImage   String?
+  displayOrder    Int       @default(0)
+  isVisible       Boolean   @default(true)
+  showInMenu      Boolean   @default(true)
+  color           String?
+  icon            String?
+  postCount       Int       @default(0)
+  viewCount       Int       @default(0)
+  template        String?
+  layout          String?
+  locale          String    @default("en")
+  translations    String?   @db.LongText
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  deletedAt       DateTime?
+  blogs           blogs     @relation(fields: [blogId], references: [id])
+
+  @@unique([blogId, slug])
+  @@index([blogId])
+  @@index([displayOrder])
+  @@index([isVisible])
+  @@index([locale])
+  @@index([parentId])
+}
+
+model blogcontacts {
+  id            String    @id
+  blogId        String
+  name          String
+  email         String
+  subject       String?
+  message       String
+  phone         String?
+  ipAddress     String?
+  userAgent     String?
+  referrer      String?
+  pageUrl       String?
+  category      String?
+  priority      Int       @default(0)
+  tags          String    @db.LongText
+  status        String    @default("PENDING")
+  isSpam        Boolean   @default(false)
+  spamScore     Float?
+  assignedTo    String?
+  responseId    String?
+  responseDate  DateTime?
+  followUpDate  DateTime?
+  followUpNotes String?
+  attachments   String?   @db.LongText
+  readAt        DateTime?
+  responseTime  Int?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  deletedAt     DateTime?
+  blogs         blogs     @relation(fields: [blogId], references: [id])
+
+  @@index([blogId])
+  @@index([category])
+  @@index([createdAt])
+  @@index([email])
+  @@index([priority])
+  @@index([status])
+}
+
+model blogpermissions {
+  id                  String    @id
+  blogId              String    @db.VarChar(255)
+  userId              String    @db.VarChar(255)
+  role                String
+  isCustomRole        Boolean   @default(false)
+  canCreatePosts      Boolean   @default(false)
+  canEditPosts        Boolean   @default(false)
+  canDeletePosts      Boolean   @default(false)
+  canPublishPosts     Boolean   @default(false)
+  canManageCategories Boolean   @default(false)
+  canManageComments   Boolean   @default(false)
+  canInviteUsers      Boolean   @default(false)
+  canManageUsers      Boolean   @default(false)
+  canAssignRoles      Boolean   @default(false)
+  canManageSettings   Boolean   @default(false)
+  canManagePlugins    Boolean   @default(false)
+  canManageThemes     Boolean   @default(false)
+  customPermissions   String?   @db.LongText
+  restrictions        String?   @db.LongText
+  ipRestrictions      String    @db.LongText
+  timeRestrictions    String?   @db.LongText
+  isActive            Boolean   @default(true)
+  suspendedUntil      DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime
+  lastUsed            DateTime?
+  revokedAt           DateTime?
+  blogs               blogs     @relation(fields: [blogId], references: [id])
+  users               users     @relation(fields: [userId], references: [id])
+
+  @@unique([blogId, userId])
+  @@index([blogId])
+  @@index([isActive])
+  @@index([role])
+  @@index([userId])
+}
+
+model blogs {
+  id              String            @id
+  instanceId      String
+  userId          String
+  name            String            @db.VarChar(255)
+  slug            String            @db.VarChar(255)
+  description     String?           @db.Text
+  status          String            @default("active")
+  settings        String?           @db.LongText
+  customDomain    String?           @unique @db.VarChar(255)
+  timezone        String            @default("UTC")
+  locale          String            @default("en")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  deletedAt       DateTime?
+  blogPlugins     blogPlugins[]
+  blogcategories  blogcategories[]
+  blogcontacts    blogcontacts[]
+  blogpermissions blogpermissions[]
+  instances       instances         @relation(fields: [instanceId], references: [id])
+  users           users             @relation(fields: [userId], references: [id])
+  blogthemes      blogthemes[]
+  posts           posts[]
+
+  @@index([customDomain])
+  @@index([instanceId])
+  @@index([status])
+  @@index([userId])
+}
+
+model blogthemes {
+  id             String    @id
+  blogId         String
+  themeId        String
+  isActive       Boolean   @default(true)
+  settings       String?   @db.LongText
+  customCss      String?
+  customJs       String?
+  layout         String?   @db.LongText
+  colorScheme    String?   @db.LongText
+  typography     String?   @db.LongText
+  spacing        String?   @db.LongText
+  mobileConfig   String?   @db.LongText
+  tabletConfig   String?   @db.LongText
+  desktopConfig  String?   @db.LongText
+  assetOverrides String?   @db.LongText
+  customFonts    String?   @db.LongText
+  imageSettings  String?   @db.LongText
+  cacheSettings  String?   @db.LongText
+  loadPriority   Int       @default(0)
+  version        String
+  lastUpdate     String?   @db.LongText
+  status         String    @default("ACTIVE")
+  errorLog       String?   @db.LongText
+  installedAt    DateTime  @default(now())
+  updatedAt      DateTime
+  lastUsedAt     DateTime?
+  deactivatedAt  DateTime?
+  blogs          blogs     @relation(fields: [blogId], references: [id])
+  themes         themes    @relation(fields: [themeId], references: [id])
+
+  @@unique([blogId, themeId])
+  @@index([blogId])
+  @@index([isActive])
+  @@index([status])
+  @@index([themeId])
+}
+
+model cacheSettings {
+  id            String    @id
+  instanceId    String
+  type          String
+  ttl           Int       @default(3600)
+  excludedPaths String    @db.Text
+  instances     instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model commentReports {
+  id              String                @id
+  queueId         String
+  reportedBy      String
+  reason          commentReports_reason
+  details         String?               @db.Text
+  timestamp       DateTime              @default(now())
+  status          commentReports_status @default(OPEN)
+  postcommentsId  String?
+  postcomments    postcomments?         @relation(fields: [postcommentsId], references: [id])
+  moderationQueue moderationQueue       @relation(fields: [queueId], references: [id])
+  users           users                 @relation(fields: [reportedBy], references: [id])
+
+  @@index([postcommentsId], map: "commentReports_postcommentsId_fkey")
+  @@index([queueId])
+  @@index([reportedBy])
+}
+
+model customFields {
+  id              String            @id
+  postTypeId      String
+  name            String
+  label           String
+  type            customFields_type
+  description     String?           @db.Text
+  required        Boolean           @default(false)
+  defaultValue    String?           @db.LongText
+  options         String?           @db.LongText
+  validation      String?           @db.LongText
+  order           Int               @default(0)
+  customPostTypes customPostTypes   @relation(fields: [postTypeId], references: [id])
+  fieldValues     fieldValues[]
+  fieldGroups     fieldGroups[]     @relation("FieldToGroup")
+
+  @@unique([postTypeId, name])
+  @@index([postTypeId])
+}
+
+model customMetaboxes {
+  id              String          @id
+  postTypeId      String
+  title           String
+  context         String
+  priority        String
+  content         String          @db.Text
+  customPostTypes customPostTypes @relation(fields: [postTypeId], references: [id])
+
+  @@index([postTypeId])
+}
+
+model customPostMeta {
+  id          String      @id
+  postId      String
+  key         String
+  value       String      @db.LongText
+  customPosts customPosts @relation(fields: [postId], references: [id])
+
+  @@unique([postId, key])
+  @@index([postId])
+}
+
+model customPostRevisions {
+  id          String      @id
+  postId      String
+  content     String      @db.LongText
+  createdAt   DateTime    @default(now())
+  createdBy   String
+  users       users       @relation(fields: [createdBy], references: [id])
+  customPosts customPosts @relation(fields: [postId], references: [id])
+
+  @@index([createdBy])
+  @@index([postId])
+}
+
+model customPostTerms {
+  id            String        @id
+  postId        String
+  termId        String
+  order         Int           @default(0)
+  customPosts   customPosts   @relation(fields: [postId], references: [id])
+  taxonomyTerms taxonomyTerms @relation(fields: [termId], references: [id])
+
+  @@unique([postId, termId])
+  @@index([postId])
+  @@index([termId])
+}
+
+model customPostTypes {
+  id                String              @id
+  instanceId        String
+  name              String
+  slug              String
+  description       String?             @db.Text
+  icon              String?
+  settings          String              @db.LongText
+  supports          String              @db.LongText
+  labels            String              @db.LongText
+  menuPosition      Int?
+  customFields      customFields[]
+  customMetaboxes   customMetaboxes[]
+  instances         instances           @relation(fields: [instanceId], references: [id])
+  customPosts       customPosts[]
+  customTaxonomies  customTaxonomies[]
+  fieldGroups       fieldGroups[]
+  postTypeTemplates postTypeTemplates[]
+
+  @@unique([instanceId, slug])
+  @@index([instanceId])
+}
+
+model customPosts {
+  id                  String                @id
+  postTypeId          String
+  title               String
+  slug                String                @db.VarChar(255)
+  status              customPosts_status    @default(DRAFT)
+  content             String?               @db.Text
+  excerpt             String?               @db.Text
+  author              String
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  publishedAt         DateTime?
+  customPostMeta      customPostMeta[]
+  customPostRevisions customPostRevisions[]
+  customPostTerms     customPostTerms[]
+  users               users                 @relation(fields: [author], references: [id])
+  customPostTypes     customPostTypes       @relation(fields: [postTypeId], references: [id])
+  fieldValues         fieldValues[]
+
+  @@unique([postTypeId, slug])
+  @@index([author])
+  @@index([postTypeId])
+}
+
+model customTaxonomies {
+  id              String          @id
+  postTypeId      String
+  name            String
+  slug            String
+  description     String?         @db.Text
+  hierarchical    Boolean         @default(false)
+  customPostTypes customPostTypes @relation(fields: [postTypeId], references: [id])
+  taxonomyTerms   taxonomyTerms[]
+
+  @@unique([postTypeId, slug])
+  @@index([postTypeId])
+}
+
+model ejsTemplates {
+  id         String    @id
+  instanceId String
+  name       String
+  content    String    @db.Text
+  layout     String?
+  data       String?   @db.LongText
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model emailAnalytics {
+  id         String              @id
+  sendId     String
+  type       emailAnalytics_type
+  value      Int
+  timestamp  DateTime            @default(now())
+  metadata   String?             @db.LongText
+  emailSends emailSends          @relation(fields: [sendId], references: [id])
+
+  @@index([sendId])
+  @@index([type])
+}
+
+model emailBlacklist {
+  id         String    @id
+  instanceId String
+  email      String
+  reason     String?   @db.Text
+  addedAt    DateTime  @default(now())
+  expiresAt  DateTime?
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, email])
+  @@index([instanceId])
+}
+
+model emailEvents {
+  id         String           @id
+  sendId     String
+  type       emailEvents_type
+  timestamp  DateTime         @default(now())
+  metadata   String?          @db.LongText
+  emailSends emailSends       @relation(fields: [sendId], references: [id])
+
+  @@index([sendId])
+  @@index([type])
+}
+
+model emailLayouts {
+  id             String         @id
+  templateId     String
+  name           String
+  content        String         @db.Text
+  styles         String?        @db.LongText
+  isDefault      Boolean        @default(false)
+  emailTemplates emailTemplates @relation(fields: [templateId], references: [id])
+
+  @@unique([templateId, name])
+  @@index([templateId])
+}
+
+model emailSends {
+  id             String            @id
+  templateId     String
+  recipient      String
+  subject        String
+  content        String            @db.Text
+  status         emailSends_status @default(QUEUED)
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  messageId      String?           @unique
+  opens          Int               @default(0)
+  clicks         Int               @default(0)
+  error          String?           @db.Text
+  retries        Int               @default(0)
+  emailAnalytics emailAnalytics[]
+  emailEvents    emailEvents[]
+  emailTemplates emailTemplates    @relation(fields: [templateId], references: [id])
+
+  @@index([status])
+  @@index([templateId])
+}
+
+model emailSettings {
+  id         String                 @id
+  instanceId String                 @unique
+  provider   emailSettings_provider @default(SMTP)
+  config     String                 @db.LongText
+  fromEmail  String
+  fromName   String
+  replyTo    String?
+  rateLimit  Int?
+  dailyLimit Int?
+  tracking   Boolean                @default(true)
+  analytics  Boolean                @default(true)
+  instances  instances              @relation(fields: [instanceId], references: [id])
+}
+
+model emailTemplateVersions {
+  id             String         @id
+  templateId     String
+  version        Int
+  changes        String?        @db.Text
+  content        String         @db.LongText
+  createdAt      DateTime       @default(now())
+  usersId        String?
+  emailTemplates emailTemplates @relation(fields: [templateId], references: [id])
+  users          users?         @relation(fields: [usersId], references: [id])
+
+  @@unique([templateId, version])
+  @@index([createdAt])
+  @@index([templateId])
+  @@index([usersId])
+}
+
+model emailTemplates {
+  id                    String                  @id
+  instanceId            String
+  name                  String
+  description           String?                 @db.Text
+  subject               String
+  bodyHtml              String                  @db.Text
+  bodyText              String                  @db.Text
+  category              emailTemplates_category
+  isDefault             Boolean                 @default(false)
+  isActive              Boolean                 @default(true)
+  variables             String?                 @db.LongText
+  attachments           String?                 @db.LongText
+  styles                String?                 @db.LongText
+  layout                String?
+  emailLayouts          emailLayouts[]
+  emailSends            emailSends[]
+  emailTemplateVersions emailTemplateVersions[]
+  instances             instances               @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model fieldGroups {
+  id              String          @id
+  postTypeId      String
+  name            String
+  label           String
+  description     String?         @db.Text
+  order           Int             @default(0)
+  customPostTypes customPostTypes @relation(fields: [postTypeId], references: [id])
+  customFields    customFields[]  @relation("FieldToGroup")
+
+  @@index([postTypeId])
+}
+
+model fieldValues {
+  id           String       @id
+  postId       String
+  fieldId      String
+  value        String       @db.LongText
+  customFields customFields @relation(fields: [fieldId], references: [id])
+  customPosts  customPosts  @relation(fields: [postId], references: [id])
+
+  @@unique([postId, fieldId])
+  @@index([fieldId])
+  @@index([postId])
+}
+
+model graphqlCache {
+  id         String    @id
+  instanceId String
+  key        String
+  data       String    @db.LongText
+  expiresAt  DateTime
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, key])
+  @@index([expiresAt])
+  @@index([instanceId])
+}
+
+model graphqlDirectives {
+  id             String         @id
+  schemaId       String
+  name           String
+  description    String?        @db.Text
+  locations      String         @db.LongText
+  isRepeatable   Boolean        @default(false)
+  isBuiltIn      Boolean        @default(false)
+  arguments      String?        @db.LongText
+  defaultValues  String?        @db.LongText
+  handler        String         @db.Text
+  priority       Int            @default(0)
+  isAsync        Boolean        @default(false)
+  applyBefore    Boolean        @default(true)
+  skipOnError    Boolean        @default(false)
+  usageCount     Int            @default(0)
+  lastUsed       DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  deprecatedAt   DateTime?
+  graphqlSchemas graphqlSchemas @relation(fields: [schemaId], references: [id])
+
+  @@unique([schemaId, name])
+  @@index([isBuiltIn])
+  @@index([name])
+  @@index([priority])
+  @@index([schemaId])
+}
+
+model graphqlMetrics {
+  id         String    @id
+  instanceId String
+  operation  String
+  timestamp  DateTime  @default(now())
+  duration   Int
+  success    Boolean   @default(true)
+  error      String?
+  complexity Int?
+  depth      Int?
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model graphqlMiddleware {
+  id             String         @id
+  schemaId       String
+  name           String
+  type           String
+  handler        String         @db.Text
+  priority       Int            @default(10)
+  graphqlSchemas graphqlSchemas @relation(fields: [schemaId], references: [id])
+
+  @@index([schemaId])
+}
+
+model graphqlMutations {
+  id             String         @id
+  schemaId       String
+  name           String
+  description    String?        @db.Text
+  args           String?        @db.LongText
+  returnType     String
+  resolver       String         @db.Text
+  deprecated     Boolean        @default(false)
+  graphqlSchemas graphqlSchemas @relation(fields: [schemaId], references: [id])
+
+  @@unique([schemaId, name])
+  @@index([schemaId])
+}
+
+model graphqlPermissions {
+  id               String          @id
+  instanceId       String
+  role             String
+  operations       String          @db.LongText
+  fields           String          @db.LongText
+  graphqlSchemasId String?
+  graphqlSchemas   graphqlSchemas? @relation(fields: [graphqlSchemasId], references: [id])
+  instances        instances       @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, role])
+  @@index([graphqlSchemasId], map: "graphqlPermissions_graphqlSchemasId_fkey")
+  @@index([instanceId])
+}
+
+model graphqlPlayground {
+  id         String    @id
+  instanceId String    @unique
+  enabled    Boolean   @default(true)
+  settings   String?   @db.LongText
+  tabs       String?   @db.LongText
+  instances  instances @relation(fields: [instanceId], references: [id])
+}
+
+model graphqlQueries {
+  id             String         @id
+  schemaId       String
+  name           String
+  description    String?        @db.Text
+  queryString    String         @db.Text
+  returnType     String
+  isDeprecated   Boolean        @default(false)
+  arguments      String?        @db.LongText
+  variables      String?        @db.LongText
+  complexity     Int            @default(1)
+  timeout        Int            @default(5000)
+  cacheEnabled   Boolean        @default(false)
+  cacheTTL       Int?
+  requiresAuth   Boolean        @default(false)
+  permissions    String         @db.LongText
+  rateLimit      Int?
+  avgResponse    Float?
+  errorRate      Float?
+  lastExecuted   DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  deprecatedAt   DateTime?
+  graphqlSchemas graphqlSchemas @relation(fields: [schemaId], references: [id])
+
+  @@unique([schemaId, name])
+  @@index([isDeprecated])
+  @@index([name])
+  @@index([requiresAuth])
+  @@index([schemaId])
+}
+
+model graphqlRateLimit {
+  id         String    @id
+  instanceId String
+  operation  String
+  limit      Int
+  window     Int
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, operation])
+  @@index([instanceId])
+}
+
+model graphqlResolvers {
+  id             String         @id
+  schemaId       String
+  name           String
+  type           String
+  fieldName      String
+  parentType     String
+  resolverFunc   String         @db.Text
+  isAsync        Boolean        @default(false)
+  isBatch        Boolean        @default(false)
+  complexity     Int            @default(1)
+  timeout        Int            @default(5000)
+  cacheEnabled   Boolean        @default(false)
+  cacheTTL       Int?
+  requiresAuth   Boolean        @default(false)
+  permissions    String         @db.LongText
+  errorHandler   String?        @db.Text
+  fallbackValue  String?        @db.LongText
+  avgResponse    Float?
+  errorRate      Float?
+  lastExecuted   DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  graphqlSchemas graphqlSchemas @relation(fields: [schemaId], references: [id])
+
+  @@unique([schemaId, type, parentType, fieldName])
+  @@index([parentType])
+  @@index([requiresAuth])
+  @@index([schemaId])
+  @@index([type])
+}
+
+model graphqlSchemas {
+  id                   String                 @id
+  instanceId           String
+  name                 String
+  description          String?                @db.Text
+  typeDefs             String                 @db.Text
+  version              String
+  isActive             Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  graphqlDirectives    graphqlDirectives[]
+  graphqlMiddleware    graphqlMiddleware[]
+  graphqlMutations     graphqlMutations[]
+  graphqlPermissions   graphqlPermissions[]
+  graphqlQueries       graphqlQueries[]
+  graphqlResolvers     graphqlResolvers[]
+  instances            instances              @relation(fields: [instanceId], references: [id])
+  graphqlSubscriptions graphqlSubscriptions[]
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model graphqlSubscriptions {
+  id             String         @id
+  schemaId       String
+  name           String
+  description    String?        @db.Text
+  args           String?        @db.LongText
+  returnType     String
+  resolver       String         @db.Text
+  pubsub         String
+  graphqlSchemas graphqlSchemas @relation(fields: [schemaId], references: [id])
+
+  @@unique([schemaId, name])
+  @@index([schemaId])
+}
+
+model healthAlerts {
+  id         String                @id
+  healthId   String
+  type       healthAlerts_type
+  severity   healthAlerts_severity
+  message    String                @db.Text
+  source     String
+  timestamp  DateTime              @default(now())
+  resolvedAt DateTime?
+  assignedTo Int?
+  status     healthAlerts_status   @default(OPEN)
+  notes      String?               @db.Text
+  siteHealth siteHealth            @relation(fields: [healthId], references: [id])
+
+  @@index([healthId])
+  @@index([timestamp])
+}
+
+model healthChecks {
+  id         String              @id
+  healthId   String
+  name       String
+  type       healthChecks_type
+  status     healthChecks_status @default(PASS)
+  message    String?             @db.Text
+  details    String?             @db.LongText
+  timestamp  DateTime            @default(now())
+  duration   Int?
+  critical   String?             @db.LongText
+  warning    String?             @db.LongText
+  siteHealth siteHealth          @relation(fields: [healthId], references: [id])
+
+  @@index([healthId])
+  @@index([type])
+}
+
+model healthMetrics {
+  id         String     @id
+  healthId   String
+  name       String
+  value      Float
+  unit       String
+  timestamp  DateTime   @default(now())
+  min        Float?
+  max        Float?
+  target     Float?
+  siteHealth siteHealth @relation(fields: [healthId], references: [id])
+
+  @@index([healthId])
+  @@index([timestamp])
+}
+
+model healthReports {
+  id         String             @id
+  healthId   String
+  type       healthReports_type
+  period     String
+  startDate  DateTime
+  endDate    DateTime
+  data       String             @db.LongText
+  summary    String             @db.Text
+  recipients String?            @db.LongText
+  sentAt     DateTime?
+  siteHealth siteHealth         @relation(fields: [healthId], references: [id])
+
+  @@index([healthId])
+  @@index([startDate, endDate])
+}
+
+model hydrationEvents {
+  id         String    @id
+  instanceId String
+  path       String
+  duration   Int
+  timestamp  DateTime  @default(now())
+  success    Boolean   @default(true)
+  error      String?
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model instancePlugins {
+  id          String    @id
+  instanceId  String
+  pluginId    String
+  isActive    Boolean   @default(true)
+  settings    String?   @db.LongText
+  version     String
+  installedAt DateTime  @default(now())
+  updatedAt   DateTime
+  lastUsedAt  DateTime?
+  hasErrors   Boolean   @default(false)
+  errorLog    String?   @db.LongText
+  instances   instances @relation(fields: [instanceId], references: [id])
+  plugins     plugins   @relation(fields: [pluginId], references: [id])
+
+  @@unique([instanceId, pluginId])
+  @@index([instanceId])
+  @@index([isActive])
+  @@index([pluginId])
+}
+
+model instanceThemes {
+  id          String    @id
+  instanceId  String
+  themeId     String
+  isActive    Boolean   @default(false)
+  isDefault   Boolean   @default(false)
+  settings    String?   @db.LongText
+  version     String
+  customCss   String?   @db.Text
+  customJs    String?   @db.Text
+  variables   String?   @db.LongText
+  installedAt DateTime  @default(now())
+  updatedAt   DateTime
+  lastUsedAt  DateTime?
+  hasErrors   Boolean   @default(false)
+  errorLog    String?   @db.LongText
+  instances   instances @relation(fields: [instanceId], references: [id])
+  themes      themes    @relation(fields: [themeId], references: [id])
+
+  @@unique([instanceId, themeId])
+  @@index([instanceId])
+  @@index([isActive])
+  @@index([isDefault])
+  @@index([themeId])
+}
+
+model instances {
+  id                      String                    @id
+  name                    String                    @db.VarChar(255)
+  type                    String                    @db.VarChar(50)
+  versionId               String
+  currentStatus           String                    @db.VarChar(50)
+  settings                String?                   @db.LongText
+  domain                  String?                   @db.VarChar(255)
+  timezone                String                    @default("UTC")
+  locale                  String                    @default("en")
+  enabledFeatures         String?                   @db.LongText
+  customDomain            Boolean                   @default(false)
+  sslEnabled              Boolean                   @default(true)
+  maintenanceMode         Boolean                   @default(false)
+  storageLimit            Int?
+  bandwidthLimit          Int?
+  userLimit               Int?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime
+  lastAccessedAt          DateTime?
+  apiKeys                 apiKeys[]
+  backupConfigurations    backupConfigurations[]
+  backupEncryption        backupEncryption?
+  backupMonitoring        backupMonitoring[]
+  backups                 backups[]
+  blogs                   blogs[]
+  cacheSettings           cacheSettings[]
+  customPostTypes         customPostTypes[]
+  ejsTemplates            ejsTemplates[]
+  emailBlacklist          emailBlacklist[]
+  emailSettings           emailSettings?
+  emailTemplates          emailTemplates[]
+  graphqlCache            graphqlCache[]
+  graphqlMetrics          graphqlMetrics[]
+  graphqlPermissions      graphqlPermissions[]
+  graphqlPlayground       graphqlPlayground?
+  graphqlRateLimit        graphqlRateLimit[]
+  graphqlSchemas          graphqlSchemas[]
+  hydrationEvents         hydrationEvents[]
+  instancePlugins         instancePlugins[]
+  instanceThemes          instanceThemes[]
+  versions                versions                  @relation(fields: [versionId], references: [id])
+  instanceusers           instanceusers[]
+  ipRateLimits            ipRateLimits[]
+  languages               languages[]
+  localizedSlugs          localizedSlugs[]
+  menus                   menus[]
+  moderationLogs          moderationLogs[]
+  moderationRules         moderationRules[]
+  moderationSettings      moderationSettings?
+  performanceMetrics      performanceMetrics[]
+  rateLimitExemptions     rateLimitExemptions[]
+  rateLimitNotifications  rateLimitNotifications[]
+  rateLimitTracking       rateLimitTracking[]
+  rateLimits              rateLimits[]
+  renderingRules          renderingRules[]
+  resourceRateLimits      resourceRateLimits[]
+  resourceUsage           resourceUsage[]
+  revisionComparisons     revisionComparisons[]
+  revisionRestorePoints   revisionRestorePoints[]
+  revisionSchedules       revisionSchedules[]
+  revisionWorkflows       revisionWorkflows[]
+  revisions               revisions[]
+  scheduledContent        scheduledContent[]
+  securityAuditLogs       securityAuditLogs[]
+  securityPolicies        securityPolicies[]
+  securitySettings        securitySettings?
+  securityViolations      securityViolations[]
+  seoSettings             seoSettings[]
+  siteHealth              siteHealth[]
+  ssrAnalytics            ssrAnalytics[]
+  ssrCache                ssrCache[]
+  ssrErrorPages           ssrErrorPages[]
+  ssrSettings             ssrSettings[]
+  stateManagement         stateManagement[]
+  tokenBuckets            tokenBuckets[]
+  translationJobs         translationJobs[]
+  translationMemory       translationMemory[]
+  vueAssetOptimization    vueAssetOptimization?
+  vueCacheGroups          vueCacheGroups[]
+  vueCacheMetrics         vueCacheMetrics[]
+  vueCachePrefetch        vueCachePrefetch[]
+  vueCacheStorage         vueCacheStorage[]
+  vueCdnConfig            vueCdnConfig?
+  vueComponentCache       vueComponentCache[]
+  vueComponentState       vueComponentState[]
+  vueComponents           vueComponents[]
+  vueComposables          vueComposables[]
+  vueConfig               vueConfig?
+  vueDirectives           vueDirectives[]
+  vueErrorHandler         vueErrorHandler?
+  vueHydrationQueue       vueHydrationQueue[]
+  vueHydrationSettings    vueHydrationSettings[]
+  vueImageOptimization    vueImageOptimization?
+  vueLazyLoadConfig       vueLazyLoadConfig?
+  vueMiddleware           vueMiddleware[]
+  vuePerformanceConfig    vuePerformanceConfig?
+  vuePlugins              vuePlugins[]
+  vueRouterAnalytics      vueRouterAnalytics[]
+  vueRouterConfig         vueRouterConfig?
+  vueRouterErrors         vueRouterErrors[]
+  vueRoutes               vueRoutes[]
+  vueServerPropLogs       vueServerPropLogs[]
+  vueServerPropMiddleware vueServerPropMiddleware[]
+  vueServerPropSources    vueServerPropSources[]
+  vueServerProps          vueServerProps[]
+  vueStateSync            vueStateSync[]
+  vueStoreAnalytics       vueStoreAnalytics[]
+  vueStoreConfig          vueStoreConfig?
+  vueStores               vueStores[]
+  webhooks                webhooks[]
+  wsAnalytics             wsAnalytics[]
+  wsAuthTokens            wsAuthTokens[]
+  wsChannelAuth           wsChannelAuth[]
+  wsChannels              wsChannels[]
+  wsConnections           wsConnections[]
+  wsEventHandlers         wsEventHandlers[]
+  wsRateLimits            wsRateLimits[]
+
+  @@index([currentStatus])
+  @@index([domain])
+  @@index([versionId])
+}
+
+model instanceusers {
+  id            String    @id
+  instanceId    String    @db.VarChar(255)
+  userId        String    @db.VarChar(255)
+  role          String
+  permissions   String?   @db.LongText
+  isActive      Boolean   @default(true)
+  lastLogin     DateTime?
+  lastActivity  DateTime?
+  accessToken   String?
+  preferences   String?   @db.LongText
+  notifications String?   @db.LongText
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  deactivatedAt DateTime?
+  loginCount    Int       @default(0)
+  failedLogins  Int       @default(0)
+  instances     instances @relation(fields: [instanceId], references: [id])
+  users         users     @relation(fields: [userId], references: [id])
+
+  @@unique([instanceId, userId])
+  @@index([instanceId])
+  @@index([isActive])
+  @@index([role])
+  @@index([userId])
+}
+
+model ipRateLimits {
+  id          String    @id
+  instanceId  String
+  ipAddress   String
+  subnet      String?
+  limit       Int
+  window      Int
+  blacklisted Boolean   @default(false)
+  expiresAt   DateTime?
+  instances   instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, ipAddress])
+  @@index([instanceId])
+}
+
+model languageFallbacks {
+  id            String    @id
+  languageId    String
+  fallbackOrder Int
+  fallbackCode  String
+  languages     languages @relation(fields: [languageId], references: [id])
+
+  @@unique([languageId, fallbackCode])
+  @@index([languageId])
+}
+
+model languageSettings {
+  id             String    @id
+  languageId     String    @unique
+  dateFormat     String    @default("YYYY-MM-DD")
+  timeFormat     String    @default("HH:mm:ss")
+  numberFormat   String    @db.LongText
+  currency       String?
+  customSettings String?   @db.LongText
+  languages      languages @relation(fields: [languageId], references: [id])
+}
+
+model languages {
+  id                String              @id
+  instanceId        String
+  code              String              @db.VarChar(10)
+  locale            String              @db.VarChar(20)
+  name              String              @db.VarChar(100)
+  nativeName        String              @db.VarChar(100)
+  isActive          Boolean             @default(true)
+  isDefault         Boolean             @default(false)
+  direction         languages_direction @default(LTR)
+  languageFallbacks languageFallbacks[]
+  languageSettings  languageSettings?
+  instances         instances           @relation(fields: [instanceId], references: [id])
+  localizedContent  localizedContent[]
+
+  @@unique([instanceId, code])
+  @@index([instanceId])
+}
+
+model localizedContent {
+  id         String    @id
+  languageId String
+  key        String
+  value      String    @db.Text
+  context    String?
+  namespace  String?
+  languages  languages @relation(fields: [languageId], references: [id])
+
+  @@unique([languageId, key, namespace])
+  @@index([key])
+  @@index([languageId])
+}
+
+model localizedSlugs {
+  id           String    @id
+  instanceId   String
+  entityType   String
+  entityId     String
+  languageCode String
+  slug         String
+  instances    instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, entityType, entityId, languageCode])
+  @@unique([instanceId, languageCode, slug])
+  @@index([instanceId])
+}
+
+model menuItems {
+  id              String      @id
+  menuId          String
+  parentId        String?
+  title           String
+  url             String?
+  pageId          String?
+  order           Int
+  menus           menus       @relation(fields: [menuId], references: [id])
+  menuItems       menuItems?  @relation("menuItemsTomenuItems", fields: [parentId], references: [id])
+  other_menuItems menuItems[] @relation("menuItemsTomenuItems")
+
+  @@index([menuId])
+  @@index([parentId], map: "menuItems_parentId_fkey")
+}
+
+model menus {
+  id         String      @id
+  instanceId String
+  name       String
+  location   String
+  menuItems  menuItems[]
+  instances  instances   @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model moderationActions {
+  id              String                   @id
+  queueId         String
+  action          moderationActions_action
+  reason          String?                  @db.Text
+  performedBy     String
+  timestamp       DateTime                 @default(now())
+  metadata        String?                  @db.LongText
+  users           users                    @relation(fields: [performedBy], references: [id])
+  moderationQueue moderationQueue          @relation(fields: [queueId], references: [id])
+
+  @@index([performedBy])
+  @@index([queueId])
+}
+
+model moderationLogs {
+  id           String                @id
+  instanceId   String
+  commentId    String
+  action       moderationLogs_action
+  performedBy  String
+  timestamp    DateTime              @default(now())
+  details      String?               @db.LongText
+  postcomments postcomments          @relation(fields: [commentId], references: [id])
+  instances    instances             @relation(fields: [instanceId], references: [id])
+  users        users                 @relation(fields: [performedBy], references: [id])
+
+  @@index([commentId])
+  @@index([instanceId])
+  @@index([performedBy])
+}
+
+model moderationQueue {
+  id                String                 @id
+  commentId         String
+  status            moderationQueue_status @default(PENDING)
+  priority          Int                    @default(0)
+  flags             String                 @db.LongText
+  moderatedBy       String?
+  moderatedAt       DateTime?
+  notes             String?                @db.Text
+  autoModScore      Float?
+  spamScore         Float?
+  toxicityScore     Float?
+  commentReports    commentReports[]
+  moderationActions moderationActions[]
+  postcomments      postcomments           @relation(fields: [commentId], references: [id])
+  users             users?                 @relation(fields: [moderatedBy], references: [id])
+
+  @@index([commentId])
+  @@index([moderatedBy])
+  @@index([status])
+}
+
+model moderationRules {
+  id          String               @id
+  instanceId  String
+  name        String
+  description String?              @db.Text
+  type        moderationRules_type
+  conditions  String               @db.LongText
+  actions     String               @db.LongText
+  isActive    Boolean              @default(true)
+  priority    Int                  @default(10)
+  instances   instances            @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model moderationSettings {
+  id                 String    @id
+  instanceId         String    @unique
+  autoModerate       Boolean   @default(true)
+  spamFilter         Boolean   @default(true)
+  profanityFilter    Boolean   @default(true)
+  linkLimit          Int       @default(2)
+  minLength          Int       @default(3)
+  maxLength          Int       @default(1000)
+  requireApproval    Boolean   @default(true)
+  approvalRoles      String    @db.LongText
+  maxCommentsPerHour Int       @default(10)
+  maxCommentsPerDay  Int       @default(50)
+  blacklistedWords   String    @db.LongText
+  blacklistedIPs     String    @db.LongText
+  whitelistedUsers   String    @db.LongText
+  instances          instances @relation(fields: [instanceId], references: [id])
+}
+
+model performanceMetrics {
+  id         String    @id
+  instanceId String
+  path       String
+  loadTime   Int
+  ttfb       Int
+  fcp        Int?
+  lcp        Int?
+  cls        Float?
+  fid        Int?
+  timestamp  DateTime  @default(now())
+  device     String?
+  browser    String?
+  connection String?
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([path])
+  @@index([timestamp])
+}
+
+model plugins {
+  id              String            @id
+  name            String
+  slug            String            @unique @db.VarChar(255)
+  description     String?
+  version         String
+  author          String
+  entryPoint      String
+  dependencies    String?           @db.LongText
+  compatibility   String            @db.LongText
+  requirements    String?           @db.LongText
+  features        String            @db.LongText
+  permissions     String            @db.LongText
+  hooks           String            @db.LongText
+  tags            String            @db.LongText
+  categories      String            @db.LongText
+  settings        String?           @db.LongText
+  apiEndpoints    String?           @db.LongText
+  adminRoutes     String?           @db.LongText
+  widgets         String?           @db.LongText
+  shortcodes      String?           @db.LongText
+  signature       String?
+  checksum        String?
+  securityAudit   String?           @db.LongText
+  performance     String?           @db.LongText
+  resourceLimits  String?           @db.LongText
+  documentation   String?
+  changelog       String?
+  support         String?
+  repository      String?
+  homepage        String?
+  license         String
+  price           Float?
+  status          String            @default("ACTIVE")
+  isPublic        Boolean           @default(true)
+  downloads       Int               @default(0)
+  rating          Float?
+  screenshots     String?           @db.LongText
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  lastTestedAt    DateTime?
+  deprecatedAt    DateTime?
+  blogPlugins     blogPlugins[]
+  instancePlugins instancePlugins[]
+
+  @@index([author])
+  @@index([categories(length: 768)])
+  @@index([isPublic])
+  @@index([slug])
+  @@index([status])
+}
+
+model postTypeTemplates {
+  id              String          @id
+  postTypeId      String
+  name            String
+  description     String?         @db.Text
+  content         String          @db.Text
+  isDefault       Boolean         @default(false)
+  customPostTypes customPostTypes @relation(fields: [postTypeId], references: [id])
+
+  @@unique([postTypeId, name])
+  @@index([postTypeId])
+}
+
+model postcomments {
+  id                 String            @id
+  postId             String
+  userId             String
+  parentId           String?
+  content            String            @db.Text
+  status             String            @default("pending")
+  likes              Int               @default(0)
+  isEdited           Boolean           @default(false)
+  editedAt           DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime
+  moderationScore    Float?
+  moderatedBy        String?
+  moderatedAt        DateTime?
+  moderationNotes    String?           @db.Text
+  commentReports     commentReports[]
+  moderationLogs     moderationLogs[]
+  moderationQueue    moderationQueue[]
+  postcomments       postcomments?     @relation("postcommentsTopostcomments", fields: [parentId], references: [id])
+  other_postcomments postcomments[]    @relation("postcommentsTopostcomments")
+  posts              posts             @relation(fields: [postId], references: [id])
+  users              users             @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([parentId])
+  @@index([postId])
+  @@index([status])
+  @@index([userId])
+}
+
+model posts {
+  id               String         @id
+  blogId           String
+  authorId         String
+  title            String
+  slug             String         @db.VarChar(255)
+  content          String         @db.Text
+  excerpt          String?        @db.Text
+  status           String         @default("DRAFT")
+  metaTitle        String?
+  metaDescription  String?        @db.Text
+  keywords         String         @db.LongText
+  featuredImage    String?
+  publishedAt      DateTime?
+  scheduledAt      DateTime?
+  categoryIds      String         @db.LongText
+  tags             String         @db.LongText
+  viewCount        Int            @default(0)
+  likeCount        Int            @default(0)
+  commentCount     Int            @default(0)
+  shareCount       Int            @default(0)
+  allowComments    Boolean        @default(true)
+  isSticky         Boolean        @default(false)
+  isFeatured       Boolean        @default(false)
+  currentRevision  String?
+  moderationStatus String         @default("APPROVED")
+  moderatedBy      Int?
+  moderatedAt      DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime
+  deletedAt        DateTime?
+  postcomments     postcomments[]
+  users            users          @relation(fields: [authorId], references: [id])
+  blogs            blogs          @relation(fields: [blogId], references: [id])
+
+  @@unique([blogId, slug])
+  @@index([authorId])
+  @@index([blogId])
+  @@index([isFeatured])
+  @@index([isSticky])
+  @@index([moderationStatus])
+  @@index([publishedAt])
+  @@index([status])
+}
+
+model rateLimitExemptions {
+  id         String    @id
+  instanceId String
+  type       String
+  value      String
+  reason     String?
+  expiresAt  DateTime?
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, type, value])
+  @@index([instanceId])
+}
+
+model rateLimitMetrics {
+  id         String     @id
+  limitId    String
+  timestamp  DateTime   @default(now())
+  requests   Int        @default(0)
+  blocked    Int        @default(0)
+  delayed    Int        @default(0)
+  rateLimits rateLimits @relation(fields: [limitId], references: [id])
+
+  @@index([limitId])
+  @@index([timestamp])
+}
+
+model rateLimitNotifications {
+  id         String    @id
+  instanceId String
+  type       String
+  threshold  Int
+  recipients String    @db.LongText
+  cooldown   Int
+  lastSent   DateTime?
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model rateLimitOverrides {
+  id         String     @id
+  limitId    String
+  type       String
+  identifier String
+  multiplier Float
+  expiration DateTime?
+  rateLimits rateLimits @relation(fields: [limitId], references: [id])
+
+  @@unique([limitId, type, identifier])
+  @@index([limitId])
+}
+
+model rateLimitRules {
+  id         String     @id
+  limitId    String
+  pattern    String
+  methods    String
+  conditions String?    @db.LongText
+  priority   Int        @default(10)
+  rateLimits rateLimits @relation(fields: [limitId], references: [id])
+
+  @@index([limitId])
+}
+
+model rateLimitTracking {
+  id          String    @id
+  instanceId  String
+  key         String
+  count       Int       @default(0)
+  windowStart DateTime  @default(now())
+  windowEnd   DateTime
+  lastRequest DateTime  @default(now())
+  instances   instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, key])
+  @@index([instanceId])
+  @@index([windowEnd])
+}
+
+model rateLimits {
+  id                 String               @id
+  instanceId         String
+  name               String
+  type               rateLimits_type
+  limit              Int
+  window             Int
+  action             rateLimits_action    @default(BLOCK)
+  rateLimitMetrics   rateLimitMetrics[]
+  rateLimitOverrides rateLimitOverrides[]
+  rateLimitRules     rateLimitRules[]
+  instances          instances            @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model renderingRules {
+  id         String    @id
+  instanceId String
+  path       String
+  strategy   String
+  priority   Int       @default(10)
+  conditions String?   @db.LongText
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([path])
+}
+
+model resourceRateLimits {
+  id           String    @id
+  instanceId   String
+  resourceType String
+  action       String
+  limit        Int
+  window       Int
+  userScope    Boolean   @default(true)
+  instances    instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, resourceType, action])
+  @@index([instanceId])
+}
+
+model resourceUsage {
+  id         String             @id
+  instanceId String
+  type       resourceUsage_type
+  value      Float
+  unit       String
+  timestamp  DateTime           @default(now())
+  limit      Float?
+  threshold  Float?
+  instances  instances          @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([timestamp])
+  @@index([type])
+}
+
+model revisionApprovals {
+  id         String                   @id
+  revisionId String
+  userId     String
+  status     revisionApprovals_status @default(PENDING)
+  comment    String?                  @db.Text
+  createdAt  DateTime                 @default(now())
+  revisions  revisions                @relation(fields: [revisionId], references: [id])
+  users      users                    @relation(fields: [userId], references: [id])
+
+  @@index([revisionId])
+  @@index([userId])
+}
+
+model revisionChanges {
+  id         String                     @id
+  revisionId String
+  field      String
+  oldValue   String?                    @db.LongText
+  newValue   String?                    @db.LongText
+  changeType revisionChanges_changeType
+  revisions  revisions                  @relation(fields: [revisionId], references: [id])
+
+  @@index([revisionId])
+}
+
+model revisionComments {
+  id         String    @id
+  revisionId String
+  userId     String
+  content    String    @db.Text
+  createdAt  DateTime  @default(now())
+  revisions  revisions @relation(fields: [revisionId], references: [id])
+  users      users     @relation(fields: [userId], references: [id])
+
+  @@index([revisionId])
+  @@index([userId])
+}
+
+model revisionComparisons {
+  id          String    @id
+  instanceId  String
+  fromVersion Int
+  toVersion   Int
+  entityType  String
+  entityId    String
+  diff        String    @db.LongText
+  createdAt   DateTime  @default(now())
+  instances   instances @relation(fields: [instanceId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([instanceId])
+}
+
+model revisionContent {
+  id         String    @id
+  revisionId String    @unique
+  content    String    @db.LongText
+  rawContent String?   @db.Text
+  revisions  revisions @relation(fields: [revisionId], references: [id])
+
+  @@index([revisionId])
+}
+
+model revisionMeta {
+  id          String              @id
+  revisionId  String              @unique
+  title       String?
+  description String?             @db.Text
+  status      revisionMeta_status @default(DRAFT)
+  tags        String              @db.Text
+  revisions   revisions           @relation(fields: [revisionId], references: [id])
+
+  @@index([revisionId])
+}
+
+model revisionRestorePoints {
+  id          String    @id
+  instanceId  String
+  name        String
+  description String?   @db.Text
+  snapshot    String    @db.LongText
+  createdAt   DateTime  @default(now())
+  createdBy   String?
+  users       users?    @relation(fields: [createdBy], references: [id])
+  instances   instances @relation(fields: [instanceId], references: [id])
+
+  @@index([createdBy])
+  @@index([instanceId])
+}
+
+model revisionSchedules {
+  id         String                   @id
+  instanceId String
+  revisionId String
+  publishAt  DateTime
+  status     revisionSchedules_status @default(PENDING)
+  instances  instances                @relation(fields: [instanceId], references: [id])
+  revisions  revisions                @relation(fields: [revisionId], references: [id])
+
+  @@index([instanceId])
+  @@index([publishAt])
+  @@index([revisionId])
+}
+
+model revisionWorkflows {
+  id         String    @id
+  instanceId String
+  name       String
+  steps      String    @db.LongText
+  isDefault  Boolean   @default(false)
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model revisions {
+  id                String              @id
+  instanceId        String
+  entityType        String
+  entityId          String
+  version           Int
+  createdAt         DateTime            @default(now())
+  createdBy         String?
+  revisionApprovals revisionApprovals[]
+  revisionChanges   revisionChanges[]
+  revisionComments  revisionComments[]
+  revisionContent   revisionContent?
+  revisionMeta      revisionMeta?
+  revisionSchedules revisionSchedules[]
+  users             users?              @relation(fields: [createdBy], references: [id])
+  instances         instances           @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, entityType, entityId, version])
+  @@index([createdBy], map: "revisions_createdBy_fkey")
+  @@index([entityType, entityId])
+  @@index([instanceId])
+}
+
+model scheduledContent {
+  id         String    @id
+  instanceId String
+  postId     String?
+  pageId     String?
+  publishAt  DateTime
+  status     String
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([publishAt])
+}
+
+model securityAuditLogs {
+  id         String                     @id
+  instanceId String
+  timestamp  DateTime                   @default(now())
+  userId     String?
+  event      securityAuditLogs_event
+  ip         String
+  userAgent  String?
+  details    String?                    @db.LongText
+  severity   securityAuditLogs_severity @default(INFO)
+  instances  instances                  @relation(fields: [instanceId], references: [id])
+  users      users?                     @relation(fields: [userId], references: [id])
+
+  @@index([instanceId])
+  @@index([timestamp])
+  @@index([userId])
+}
+
+model securityKeys {
+  id           String               @id
+  securityId   String
+  keyType      securityKeys_keyType
+  publicKey    String
+  name         String
+  lastUsed     DateTime?
+  userSecurity userSecurity         @relation(fields: [securityId], references: [id])
+
+  @@index([securityId])
+}
+
+model securityPolicies {
+  id         String                @id
+  instanceId String
+  type       securityPolicies_type
+  name       String
+  rules      String                @db.LongText
+  isActive   Boolean               @default(true)
+  priority   Int                   @default(10)
+  instances  instances             @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model securitySettings {
+  id               String    @id
+  instanceId       String    @unique
+  passwordPolicy   String    @db.LongText
+  mfaRequired      Boolean   @default(false)
+  ipWhitelist      String    @db.LongText
+  maxLoginAttempts Int       @default(5)
+  sessionTimeout   Int       @default(3600)
+  instances        instances @relation(fields: [instanceId], references: [id])
+}
+
+model securityViolations {
+  id         String                      @id
+  instanceId String
+  timestamp  DateTime                    @default(now())
+  type       securityViolations_type
+  severity   securityViolations_severity
+  details    String                      @db.LongText
+  resolved   Boolean                     @default(false)
+  resolvedAt DateTime?
+  instances  instances                   @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model seoSettings {
+  id         String    @id
+  instanceId String
+  postId     String?
+  pageId     String?
+  metaTitle  String?
+  metaDesc   String?
+  ogImage    String?
+  canonical  String?
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([pageId])
+  @@index([postId])
+}
+
+model siteHealth {
+  id            String            @id
+  instanceId    String
+  status        siteHealth_status @default(HEALTHY)
+  score         Int               @default(100)
+  lastCheck     DateTime          @default(now())
+  healthAlerts  healthAlerts[]
+  healthChecks  healthChecks[]
+  healthMetrics healthMetrics[]
+  healthReports healthReports[]
+  instances     instances         @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model ssrAnalytics {
+  id         String    @id
+  instanceId String
+  path       String
+  duration   Int
+  timestamp  DateTime  @default(now())
+  success    Boolean   @default(true)
+  error      String?
+  memory     Int?
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model ssrCache {
+  id         String    @id
+  instanceId String
+  path       String
+  content    String    @db.Text
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  hash       String
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, path])
+  @@index([expiresAt])
+  @@index([instanceId])
+}
+
+model ssrErrorPages {
+  id         String    @id
+  instanceId String
+  statusCode Int
+  template   String    @db.Text
+  isCustom   Boolean   @default(false)
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, statusCode])
+  @@index([instanceId])
+}
+
+model ssrSettings {
+  id            String    @id
+  instanceId    String
+  cacheEnabled  Boolean   @default(true)
+  cacheDuration Int       @default(3600)
+  vueVersion    String    @default("3")
+  ejsSettings   String?   @db.LongText
+  instances     instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model stateManagement {
+  id           String    @id
+  instanceId   String
+  storeName    String
+  initialState String?   @db.LongText
+  persist      Boolean   @default(false)
+  instances    instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, storeName])
+  @@index([instanceId])
+}
+
+model taxonomyTerms {
+  id                  String            @id
+  taxonomyId          String
+  name                String
+  slug                String
+  description         String?           @db.Text
+  parentId            String?
+  customPostTerms     customPostTerms[]
+  taxonomyTerms       taxonomyTerms?    @relation("taxonomyTermsTotaxonomyTerms", fields: [parentId], references: [id])
+  other_taxonomyTerms taxonomyTerms[]   @relation("taxonomyTermsTotaxonomyTerms")
+  customTaxonomies    customTaxonomies  @relation(fields: [taxonomyId], references: [id])
+
+  @@unique([taxonomyId, slug])
+  @@index([parentId])
+  @@index([taxonomyId])
+}
+
+model themes {
+  id             String           @id
+  name           String
+  slug           String           @unique @db.VarChar(255)
+  description    String?
+  version        String
+  author         String
+  template       String
+  stylesheet     String
+  assets         String?          @db.LongText
+  layouts        String           @db.LongText
+  components     String           @db.LongText
+  colorSchemes   String?          @db.LongText
+  typography     String?          @db.LongText
+  spacing        String?          @db.LongText
+  customFields   String?          @db.LongText
+  breakpoints    String           @db.LongText
+  mobileLayout   String?          @db.LongText
+  tabletLayout   String?          @db.LongText
+  desktopLayout  String?          @db.LongText
+  features       String           @db.LongText
+  widgets        String?          @db.LongText
+  templates      String?          @db.LongText
+  customizers    String?          @db.LongText
+  compatibility  String           @db.LongText
+  dependencies   String?          @db.LongText
+  requirements   String?          @db.LongText
+  performance    String?          @db.LongText
+  optimization   String?          @db.LongText
+  cacheStrategy  String?          @db.LongText
+  documentation  String?
+  changelog      String?
+  support        String?
+  preview        String?
+  repository     String?
+  homepage       String?
+  license        String
+  price          Float?
+  status         String           @default("ACTIVE")
+  isPublic       Boolean          @default(true)
+  downloads      Int              @default(0)
+  rating         Float?
+  tags           String           @db.LongText
+  categories     String           @db.LongText
+  screenshots    String?          @db.LongText
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  lastTestedAt   DateTime?
+  deprecatedAt   DateTime?
+  blogthemes     blogthemes[]
+  instanceThemes instanceThemes[]
+
+  @@index([author])
+  @@index([categories(length: 768)])
+  @@index([isPublic])
+  @@index([slug])
+  @@index([status])
+}
+
+model tokenBuckets {
+  id         String    @id
+  instanceId String
+  key        String
+  tokens     Float
+  capacity   Int
+  refillRate Float
+  lastRefill DateTime  @default(now())
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, key])
+  @@index([instanceId])
+}
+
+model translationJobItems {
+  id              String                     @id
+  jobId           String
+  entityType      String
+  entityId        String
+  field           String
+  sourceText      String                     @db.Text
+  targetText      String?                    @db.Text
+  status          translationJobItems_status @default(PENDING)
+  translationJobs translationJobs            @relation(fields: [jobId], references: [id])
+
+  @@index([jobId])
+}
+
+model translationJobs {
+  id                  String                 @id
+  instanceId          String
+  sourceLang          String
+  targetLang          String
+  status              translationJobs_status @default(PENDING)
+  progress            Float                  @default(0)
+  dueDate             DateTime?
+  assignedTo          String?
+  translationJobItems translationJobItems[]
+  users               users?                 @relation(fields: [assignedTo], references: [id])
+  instances           instances              @relation(fields: [instanceId], references: [id])
+
+  @@index([assignedTo])
+  @@index([instanceId])
+}
+
+model translationMemory {
+  id         String    @id
+  instanceId String
+  sourceText String    @db.Text
+  targetText String    @db.Text
+  sourceLang String
+  targetLang String
+  context    String?
+  lastUsed   DateTime  @default(now())
+  useCount   Int       @default(1)
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, sourceLang, targetLang])
+  @@index([instanceId])
+  @@index([sourceLang, targetLang])
+}
+
+model trustedDevices {
+  id           String       @id
+  securityId   String
+  deviceId     String       @unique
+  deviceName   String
+  deviceType   String
+  browser      String?
+  os           String?
+  lastUsed     DateTime     @default(now())
+  isActive     Boolean      @default(true)
+  userSecurity userSecurity @relation(fields: [securityId], references: [id])
+
+  @@index([securityId])
+}
+
+model userModerationHistory {
+  id           String    @id
+  userId       String    @unique
+  warningCount Int       @default(0)
+  banCount     Int       @default(0)
+  lastWarning  DateTime?
+  lastBan      DateTime?
+  isBanned     Boolean   @default(false)
+  banExpiry    DateTime?
+  notes        String?   @db.Text
+  users        users     @relation(fields: [userId], references: [id])
+}
+
+model userSecurity {
+  id                 String                        @id
+  userId             String                        @unique
+  twoFactorEnabled   Boolean                       @default(false)
+  twoFactorMethod    userSecurity_twoFactorMethod?
+  twoFactorSecret    String?
+  backupCodes        String                        @db.LongText
+  lastPasswordChange DateTime?
+  passwordHistory    String?                       @db.LongText
+  failedAttempts     Int                           @default(0)
+  lockedUntil        DateTime?
+  securityKeys       securityKeys[]
+  trustedDevices     trustedDevices[]
+  users              users                         @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model userpreferences {
+  id                 String    @id
+  userId             String    @unique
+  theme              String    @default("light")
+  language           String    @default("en")
+  timezone           String    @default("UTC")
+  dateFormat         String    @default("YYYY-MM-DD")
+  timeFormat         String    @default("HH:mm")
+  notifications      String    @db.LongText
+  communicationPrefs String    @db.LongText
+  emailSettings      String    @db.LongText
+  privacySettings    String    @db.LongText
+  dashboardLayout    String?   @db.LongText
+  defaultView        String    @default("grid")
+  itemsPerPage       Int       @default(10)
+  editorSettings     String    @db.LongText
+  contentFilters     String?   @db.LongText
+  sortPreferences    String?   @db.LongText
+  tagPreferences     String    @db.LongText
+  accessibility      String    @db.LongText
+  securitySettings   String    @db.LongText
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime
+  lastSyncedAt       DateTime?
+  users              users     @relation(fields: [userId], references: [id])
+
+  @@index([language])
+  @@index([theme])
+  @@index([userId])
+}
+
+model users {
+  id                    String                  @id
+  email                 String                  @unique
+  username              String                  @unique
+  password              String
+  firstName             String?                 @db.VarChar(255)
+  lastName              String?                 @db.VarChar(255)
+  avatar                String?
+  status                String                  @default("active")
+  role                  String                  @default("user")
+  emailVerified         Boolean                 @default(false)
+  lastLogin             DateTime?
+  failedLoginAttempts   Int                     @default(0)
+  twoFactorEnabled      Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  deletedAt             DateTime?
+  apiKeys               apiKeys[]
+  blogpermissions       blogpermissions[]
+  blogs                 blogs[]
+  commentReports        commentReports[]
+  customPostRevisions   customPostRevisions[]
+  customPosts           customPosts[]
+  emailTemplateVersions emailTemplateVersions[]
+  instanceusers         instanceusers[]
+  moderationActions     moderationActions[]
+  moderationLogs        moderationLogs[]
+  moderationQueue       moderationQueue[]
+  postcomments          postcomments[]
+  posts                 posts[]
+  revisionApprovals     revisionApprovals[]
+  revisionComments      revisionComments[]
+  revisionRestorePoints revisionRestorePoints[]
+  revisions             revisions[]
+  securityAuditLogs     securityAuditLogs[]
+  translationJobs       translationJobs[]
+  userModerationHistory userModerationHistory?
+  userSecurity          userSecurity?
+  userpreferences       userpreferences?
+  wsAuthTokens          wsAuthTokens[]
+  wsConnections         wsConnections[]
+
+  @@index([email])
+  @@index([status])
+  @@index([username])
+}
+
+model versionFeatures {
+  id              String    @id
+  versionId       String
+  name            String
+  description     String?   @db.Text
+  type            String
+  impact          String
+  details         String?   @db.LongText
+  configuration   String?   @db.LongText
+  dependencies    String    @db.LongText
+  documentation   String?   @db.Text
+  examples        String?   @db.Text
+  isEnabled       Boolean   @default(true)
+  isStable        Boolean   @default(false)
+  isBeta          Boolean   @default(false)
+  isBreaking      Boolean   @default(false)
+  breakingDetails String?   @db.Text
+  migrationGuide  String?   @db.Text
+  usageCount      Int       @default(0)
+  lastUsed        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  deprecatedAt    DateTime?
+  versions        versions  @relation(fields: [versionId], references: [id])
+
+  @@unique([versionId, name])
+  @@index([isBreaking])
+  @@index([isEnabled])
+  @@index([isStable])
+  @@index([type])
+  @@index([versionId])
+}
+
+model versionMigrations {
+  id             String    @id
+  versionId      String
+  name           String
+  description    String?   @db.Text
+  type           String
+  direction      String
+  script         String    @db.Text
+  rollbackScript String?   @db.Text
+  checksum       String
+  dependencies   String    @db.LongText
+  prerequisites  String?   @db.LongText
+  status         String    @default("PENDING")
+  executedAt     DateTime?
+  duration       Int?
+  batchNumber    Int?
+  isValidated    Boolean   @default(false)
+  validationLog  String?   @db.LongText
+  hasErrors      Boolean   @default(false)
+  errorLog       String?   @db.LongText
+  retryCount     Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  versions       versions  @relation(fields: [versionId], references: [id])
+
+  @@unique([versionId, name])
+  @@index([batchNumber])
+  @@index([status])
+  @@index([type])
+  @@index([versionId])
+}
+
+model versions {
+  id                String              @id
+  name              String
+  description       String?             @db.Text
+  releaseDate       DateTime            @default(now())
+  isActive          Boolean             @default(true)
+  major             Int
+  minor             Int
+  patch             Int
+  stability         String              @default("stable")
+  changelog         String?             @db.Text
+  requirements      String?             @db.LongText
+  dependencies      String?             @db.LongText
+  breaking          Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  deprecatedAt      DateTime?
+  apiVersions       apiVersions[]
+  instances         instances[]
+  versionFeatures   versionFeatures[]
+  versionMigrations versionMigrations[]
+
+  @@unique([major, minor, patch])
+  @@index([isActive])
+  @@index([stability])
+}
+
+model vueAssetOptimization {
+  id                      String                   @id
+  instanceId              String                   @unique
+  enabled                 Boolean                  @default(true)
+  environment             String                   @default("production")
+  CssOptimizationConfig   CssOptimizationConfig?
+  FontOptimizationConfig  FontOptimizationConfig?
+  ImageOptimizationConfig ImageOptimizationConfig?
+  JsOptimizationConfig    JsOptimizationConfig?
+  instances               instances                @relation(fields: [instanceId], references: [id])
+  vueOptimizationReports  vueOptimizationReports[]
+  vueOptimizedAssets      vueOptimizedAssets[]
+}
+
+model vueCacheEntries {
+  id                String            @id
+  cacheId           String
+  key               String
+  data              String            @db.LongText
+  hash              String
+  createdAt         DateTime          @default(now())
+  expiresAt         DateTime?
+  lastAccessed      DateTime          @default(now())
+  hits              Int               @default(0)
+  isValid           Boolean           @default(true)
+  invalidatedAt     DateTime?
+  vueComponentCache vueComponentCache @relation(fields: [cacheId], references: [id])
+
+  @@unique([cacheId, key])
+  @@index([cacheId])
+  @@index([expiresAt])
+}
+
+model vueCacheGroups {
+  id         String                  @id
+  instanceId String
+  name       String
+  strategy   vueCacheGroups_strategy
+  maxAge     Int?
+  maxEntries Int?
+  shared     Boolean                 @default(false)
+  persistent Boolean                 @default(false)
+  instances  instances               @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model vueCacheInvalidations {
+  id                String            @id
+  cacheId           String
+  pattern           String
+  condition         String?           @db.Text
+  interval          Int?
+  nextRun           DateTime?
+  cascade           Boolean           @default(false)
+  vueComponentCache vueComponentCache @relation(fields: [cacheId], references: [id])
+
+  @@index([cacheId])
+  @@index([nextRun])
+}
+
+model vueCacheMetrics {
+  id            String         @id
+  instanceId    String
+  componentId   String?
+  hits          Int            @default(0)
+  misses        Int            @default(0)
+  evictions     Int            @default(0)
+  size          Int            @default(0)
+  avgHitTime    Float?
+  avgMissTime   Float?
+  timestamp     DateTime       @default(now())
+  vueComponents vueComponents? @relation(fields: [componentId], references: [id])
+  instances     instances      @relation(fields: [instanceId], references: [id])
+
+  @@index([componentId])
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model vueCachePrefetch {
+  id         String    @id
+  instanceId String
+  pattern    String
+  components String    @db.LongText
+  onHover    Boolean   @default(true)
+  onVisible  Boolean   @default(false)
+  delay      Int       @default(0)
+  condition  String?   @db.Text
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model vueCacheStorage {
+  id              String               @id
+  instanceId      String
+  type            vueCacheStorage_type
+  config          String               @db.LongText
+  maxSize         Int?
+  lastCleanup     DateTime?
+  cleanupInterval Int?
+  instances       instances            @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, type])
+  @@index([instanceId])
+}
+
+model vueCdnAnalytics {
+  id           String       @id
+  configId     String
+  startTime    DateTime
+  endTime      DateTime
+  requests     Int
+  bandwidth    BigInt
+  hits         Int
+  misses       Int
+  latency      String?      @db.LongText
+  errorRate    Float?
+  geoStats     String?      @db.LongText
+  vueCdnConfig vueCdnConfig @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+  @@index([startTime])
+}
+
+model vueCdnAssets {
+  id           String              @id
+  configId     String
+  path         String
+  type         vueCdnAssets_type
+  size         Int
+  status       vueCdnAssets_status @default(PENDING)
+  cdnUrl       String?
+  cacheKey     String?
+  expiry       DateTime?
+  hits         Int                 @default(0)
+  bandwidth    BigInt              @default(0)
+  vueCdnConfig vueCdnConfig        @relation(fields: [configId], references: [id])
+
+  @@unique([configId, path])
+  @@index([configId])
+  @@index([status])
+}
+
+model vueCdnConfig {
+  id                  String                @id
+  instanceId          String                @unique
+  provider            vueCdnConfig_provider @default(CLOUDFLARE)
+  enabled             Boolean               @default(true)
+  apiKey              String?
+  apiSecret           String?
+  accountId           String?
+  domain              String?
+  zone                String?
+  ttl                 Int                   @default(86400)
+  cacheByDevice       Boolean               @default(true)
+  cacheByLanguage     Boolean               @default(true)
+  vueCdnAnalytics     vueCdnAnalytics[]
+  vueCdnAssets        vueCdnAssets[]
+  instances           instances             @relation(fields: [instanceId], references: [id])
+  vueCdnEndpoints     vueCdnEndpoints[]
+  vueCdnPurgeRequests vueCdnPurgeRequests[]
+  vueCdnRules         vueCdnRules[]
+}
+
+model vueCdnEndpoints {
+  id             String               @id
+  configId       String
+  path           String
+  type           vueCdnEndpoints_type
+  ttl            Int?
+  customRules    String?              @db.LongText
+  allowedMethods String               @db.LongText
+  corsEnabled    Boolean              @default(true)
+  compression    Boolean              @default(true)
+  minification   Boolean              @default(true)
+  vueCdnConfig   vueCdnConfig         @relation(fields: [configId], references: [id])
+
+  @@unique([configId, path])
+  @@index([configId])
+}
+
+model vueCdnPurgeRequests {
+  id           String                     @id
+  configId     String
+  paths        String                     @db.LongText
+  tags         String                     @db.LongText
+  status       vueCdnPurgeRequests_status @default(PENDING)
+  submitted    DateTime                   @default(now())
+  completed    DateTime?
+  success      Boolean?
+  error        String?
+  vueCdnConfig vueCdnConfig               @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+  @@index([status])
+}
+
+model vueCdnRules {
+  id           String             @id
+  configId     String
+  name         String
+  pattern      String
+  priority     Int                @default(0)
+  action       vueCdnRules_action
+  parameters   String?            @db.LongText
+  conditions   String?            @db.LongText
+  enabled      Boolean            @default(true)
+  vueCdnConfig vueCdnConfig       @relation(fields: [configId], references: [id])
+
+  @@unique([configId, name])
+  @@index([configId])
+}
+
+model vueComponentCache {
+  id                    String                     @id
+  instanceId            String
+  componentId           String                     @unique
+  strategy              vueComponentCache_strategy @default(MEMORY)
+  maxAge                Int?
+  maxEntries            Int?
+  revalidate            Boolean                    @default(false)
+  staleWhileRevalidate  Int?
+  keyPattern            String?
+  includes              String                     @db.LongText
+  excludes              String                     @db.LongText
+  vueCacheEntries       vueCacheEntries[]
+  vueCacheInvalidations vueCacheInvalidations[]
+  vueComponents         vueComponents              @relation(fields: [componentId], references: [id])
+  instances             instances                  @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model vueComponentState {
+  id                 String                  @id
+  instanceId         String
+  componentId        String
+  name               String
+  type               vueComponentState_type  @default(REACTIVE)
+  scope              vueComponentState_scope @default(LOCAL)
+  initialValue       String?                 @db.LongText
+  deep               Boolean                 @default(false)
+  immediate          Boolean                 @default(false)
+  vueComponents      vueComponents           @relation(fields: [componentId], references: [id])
+  instances          instances               @relation(fields: [instanceId], references: [id])
+  vueComputedProps   vueComputedProps[]
+  vueEffects         vueEffects[]
+  vueStateHistory    vueStateHistory?
+  vueStateValidation vueStateValidation?
+  vueStateWatchers   vueStateWatchers[]
+
+  @@unique([componentId, name])
+  @@index([componentId])
+  @@index([instanceId])
+}
+
+model vueComponents {
+  id                          String                        @id
+  instanceId                  String
+  name                        String
+  description                 String?
+  version                     String?
+  isPublic                    Boolean                       @default(false)
+  template                    String
+  script                      String?
+  style                       String?
+  props                       String?                       @db.LongText
+  emits                       String?                       @db.LongText
+  setup                       String?
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime
+  vueRouterConfigId           String?
+  vueCacheMetrics             vueCacheMetrics[]
+  vueComponentCache           vueComponentCache?
+  vueComponentState           vueComponentState[]
+  instances                   instances                     @relation(fields: [instanceId], references: [id])
+  vueRouterConfig             vueRouterConfig?              @relation(fields: [vueRouterConfigId], references: [id])
+  vueComputedProps            vueComputedProps[]
+  vueEffects                  vueEffects[]
+  vueHydrationEvents          vueHydrationEvents[]
+  vueHydrationMetrics         vueHydrationMetrics[]
+  vueHydrationSettings        vueHydrationSettings?
+  vueLazyLoadComponents       vueLazyLoadComponents[]
+  vuePerformanceMetrics       vuePerformanceMetrics[]
+  vuePerformanceOptimizations vuePerformanceOptimizations[]
+  vueRouterGuards             vueRouterGuards[]
+  vueRouterRoutes             vueRouterRoutes[]
+  vueServerPropLogs           vueServerPropLogs[]
+  vueServerProps              vueServerProps[]
+  vueStateWatchers            vueStateWatchers[]
+
+  @@index([instanceId])
+  @@index([name])
+  @@index([vueRouterConfigId], map: "vueComponents_vueRouterConfigId_fkey")
+}
+
+model vueComposables {
+  id             String    @id
+  instanceId     String
+  name           String
+  implementation String    @db.Text
+  description    String?   @db.Text
+  params         String?   @db.LongText
+  returns        String?   @db.LongText
+  usageCount     Int       @default(0)
+  instances      instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model vueComputedProps {
+  id                String            @id
+  stateId           String
+  name              String
+  getter            String            @db.Text
+  setter            String?           @db.Text
+  cache             Boolean           @default(true)
+  lazy              Boolean           @default(true)
+  deps              String?           @db.LongText
+  vueComponentsId   String?
+  vueComponentState vueComponentState @relation(fields: [stateId], references: [id])
+  vueComponents     vueComponents?    @relation(fields: [vueComponentsId], references: [id])
+
+  @@unique([stateId, name])
+  @@index([stateId])
+  @@index([vueComponentsId], map: "vueComputedProps_vueComponentsId_fkey")
+}
+
+model vueConfig {
+  id               String         @id
+  instanceId       String         @unique
+  version          String
+  mode             vueConfig_mode @default(PRODUCTION)
+  devtools         Boolean        @default(false)
+  features         String?        @db.LongText
+  compiler         String?        @db.LongText
+  performance      Boolean        @default(false)
+  productionTip    Boolean        @default(false)
+  globalProperties String?        @db.LongText
+  globalDirectives String?        @db.LongText
+  globalComponents String?        @db.LongText
+  instances        instances      @relation(fields: [instanceId], references: [id])
+}
+
+model vueDirectives {
+  id         String    @id
+  instanceId String
+  name       String
+  mounted    String?   @db.Text
+  updated    String?   @db.Text
+  unmounted  String?   @db.Text
+  global     Boolean   @default(false)
+  modifiers  String?   @db.LongText
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model vueEffects {
+  id                String            @id
+  stateId           String
+  name              String
+  effect            String            @db.Text
+  async             Boolean           @default(false)
+  onCleanup         String?           @db.Text
+  flush             vueEffects_flush  @default(POST)
+  debounce          Int?
+  throttle          Int?
+  vueComponentsId   String?
+  vueComponentState vueComponentState @relation(fields: [stateId], references: [id])
+  vueComponents     vueComponents?    @relation(fields: [vueComponentsId], references: [id])
+
+  @@unique([stateId, name])
+  @@index([stateId])
+  @@index([vueComponentsId], map: "vueEffects_vueComponentsId_fkey")
+}
+
+model vueErrorHandler {
+  id          String    @id
+  instanceId  String    @unique
+  handler     String    @db.Text
+  reporting   Boolean   @default(true)
+  logErrors   Boolean   @default(true)
+  trackErrors Boolean   @default(true)
+  instances   instances @relation(fields: [instanceId], references: [id])
+}
+
+model vueHydrationDependencies {
+  id                   String               @id
+  settingsId           String
+  name                 String
+  version              String
+  isAsync              Boolean              @default(false)
+  loadPriority         Int                  @default(0)
+  preload              Boolean              @default(false)
+  vueHydrationSettings vueHydrationSettings @relation(fields: [settingsId], references: [id])
+
+  @@unique([settingsId, name])
+  @@index([settingsId])
+}
+
+model vueHydrationEvents {
+  id                   String                  @id
+  settingsId           String
+  type                 vueHydrationEvents_type
+  timestamp            DateTime                @default(now())
+  duration             Int?
+  success              Boolean                 @default(true)
+  error                String?                 @db.Text
+  stackTrace           String?                 @db.Text
+  metrics              String?                 @db.LongText
+  vueComponentsId      String?
+  vueHydrationSettings vueHydrationSettings    @relation(fields: [settingsId], references: [id])
+  vueComponents        vueComponents?          @relation(fields: [vueComponentsId], references: [id])
+
+  @@index([settingsId])
+  @@index([timestamp])
+  @@index([vueComponentsId], map: "vueHydrationEvents_vueComponentsId_fkey")
+}
+
+model vueHydrationMetrics {
+  id                   String               @id
+  settingsId           String
+  startTime            DateTime
+  endTime              DateTime
+  duration             Int
+  memoryUsage          Int?
+  domNodes             Int?
+  componentCount       Int?
+  eventCount           Int?
+  vueComponentsId      String?
+  vueHydrationSettings vueHydrationSettings @relation(fields: [settingsId], references: [id])
+  vueComponents        vueComponents?       @relation(fields: [vueComponentsId], references: [id])
+
+  @@index([settingsId])
+  @@index([vueComponentsId], map: "vueHydrationMetrics_vueComponentsId_fkey")
+}
+
+model vueHydrationQueue {
+  id                     String                     @id
+  instanceId             String
+  concurrency            Int                        @default(1)
+  timeout                Int                        @default(30000)
+  retries                Int                        @default(3)
+  strategy               vueHydrationQueue_strategy @default(FIFO)
+  batchSize              Int                        @default(1)
+  instances              instances                  @relation(fields: [instanceId], references: [id])
+  vueHydrationQueueItems vueHydrationQueueItems[]
+
+  @@index([instanceId])
+}
+
+model vueHydrationQueueItems {
+  id                String                        @id
+  queueId           String
+  componentId       String
+  priority          Int                           @default(0)
+  status            vueHydrationQueueItems_status @default(PENDING)
+  addedAt           DateTime                      @default(now())
+  startedAt         DateTime?
+  completedAt       DateTime?
+  attempts          Int                           @default(0)
+  error             String?                       @db.Text
+  vueHydrationQueue vueHydrationQueue             @relation(fields: [queueId], references: [id])
+
+  @@index([queueId])
+  @@index([status])
+}
+
+model vueHydrationSettings {
+  id                       String                         @id
+  instanceId               String
+  componentId              String                         @unique
+  strategy                 vueHydrationSettings_strategy  @default(SYNC)
+  mode                     vueHydrationSettings_mode      @default(FULL)
+  priority                 Int                            @default(0)
+  timeout                  Int?
+  delay                    Int?
+  selector                 String?
+  islands                  String?                        @db.LongText
+  stateMode                vueHydrationSettings_stateMode @default(MERGE)
+  stateMergeStrategy       String?
+  vueHydrationDependencies vueHydrationDependencies[]
+  vueHydrationEvents       vueHydrationEvents[]
+  vueHydrationMetrics      vueHydrationMetrics[]
+  vueComponents            vueComponents                  @relation(fields: [componentId], references: [id])
+  instances                instances                      @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model vueImageAnalytics {
+  id                   String               @id
+  configId             String
+  startTime            DateTime
+  endTime              DateTime
+  processed            Int                  @default(0)
+  failed               Int                  @default(0)
+  totalOriginalSize    BigInt               @default(0)
+  totalOptimizedSize   BigInt               @default(0)
+  formatStats          String?              @db.LongText
+  avgProcessingTime    Int?
+  vueImageOptimization vueImageOptimization @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+  @@index([startTime])
+}
+
+model vueImageOptimization {
+  id                      String                    @id
+  instanceId              String                    @unique
+  enabled                 Boolean                   @default(true)
+  defaultQuality          Int                       @default(80)
+  autoFormat              Boolean                   @default(true)
+  formats                 String                    @db.LongText
+  maxWidth                Int?
+  maxHeight               Int?
+  preserveMetadata        Boolean                   @default(false)
+  vueImageAnalytics       vueImageAnalytics[]
+  instances               instances                 @relation(fields: [instanceId], references: [id])
+  vueImageOptimizations   vueImageOptimizations[]
+  vueImagePresets         vueImagePresets[]
+  vueImageProcessingQueue vueImageProcessingQueue[]
+  vueImageProfiles        vueImageProfiles[]
+}
+
+model vueImageOptimizations {
+  id                   String                       @id
+  configId             String
+  originalPath         String
+  originalSize         Int
+  originalFormat       String
+  optimizedSize        Int?
+  optimizedFormat      String?
+  dimensions           String?                      @db.LongText
+  profile              String?
+  quality              Int?
+  status               vueImageOptimizations_status @default(PENDING)
+  error                String?                      @db.Text
+  createdAt            DateTime                     @default(now())
+  processedAt          DateTime?
+  vueImageOptimization vueImageOptimization         @relation(fields: [configId], references: [id])
+  vueImageVariants     vueImageVariants[]
+
+  @@index([configId])
+  @@index([status])
+}
+
+model vueImagePresets {
+  id                   String                 @id
+  configId             String
+  name                 String
+  description          String?
+  width                Int?
+  height               Int?
+  aspectRatio          Float?
+  quality              Int                    @default(80)
+  format               vueImagePresets_format
+  options              String?                @db.LongText
+  vueImageOptimization vueImageOptimization   @relation(fields: [configId], references: [id])
+
+  @@unique([configId, name])
+  @@index([configId])
+}
+
+model vueImageProcessingQueue {
+  id                   String                         @id
+  configId             String
+  path                 String
+  priority             Int                            @default(0)
+  preset               String?
+  profile              String?
+  custom               String?                        @db.LongText
+  status               vueImageProcessingQueue_status @default(PENDING)
+  attempts             Int                            @default(0)
+  error                String?                        @db.Text
+  createdAt            DateTime                       @default(now())
+  processedAt          DateTime?
+  vueImageOptimization vueImageOptimization           @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+  @@index([status])
+}
+
+model vueImageProfiles {
+  id                   String               @id
+  configId             String
+  name                 String
+  description          String?
+  quality              Int                  @default(80)
+  width                Int?
+  height               Int?
+  fit                  vueImageProfiles_fit @default(CONTAIN)
+  sharpen              Boolean              @default(false)
+  blur                 Float?
+  formatOptions        String?              @db.LongText
+  vueImageOptimization vueImageOptimization @relation(fields: [configId], references: [id])
+
+  @@unique([configId, name])
+  @@index([configId])
+}
+
+model vueImageVariants {
+  id                    String                @id
+  optimizationId        String
+  width                 Int?
+  height                Int?
+  format                String
+  quality               Int
+  path                  String
+  size                  Int
+  blur                  Float?
+  watermark             Boolean               @default(false)
+  metadata              String?               @db.LongText
+  vueImageOptimizations vueImageOptimizations @relation(fields: [optimizationId], references: [id])
+
+  @@index([optimizationId])
+}
+
+model vueLazyLoadComponents {
+  id                      String                         @id
+  configId                String
+  componentId             String
+  strategy                vueLazyLoadComponents_strategy
+  placeholder             String?                        @db.Text
+  minHeight               Int?
+  loadingClass            String?
+  errorClass              String?
+  suspense                Boolean                        @default(false)
+  fallback                String?                        @db.Text
+  vueComponents           vueComponents                  @relation(fields: [componentId], references: [id])
+  vueLazyLoadConfig       vueLazyLoadConfig              @relation(fields: [configId], references: [id])
+  vueLazyLoadDependencies vueLazyLoadDependencies[]
+  vueLazyLoadEvents       vueLazyLoadEvents[]
+
+  @@unique([configId, componentId])
+  @@index([componentId], map: "vueLazyLoadComponents_componentId_fkey")
+  @@index([configId])
+}
+
+model vueLazyLoadConfig {
+  id                    String                            @id
+  instanceId            String                            @unique
+  enabled               Boolean                           @default(true)
+  defaultStrategy       vueLazyLoadConfig_defaultStrategy @default(VIEWPORT)
+  threshold             Float                             @default(0.1)
+  rootMargin            String                            @default("50px")
+  minLoadDelay          Int?
+  maxConcurrent         Int                               @default(3)
+  vueLazyLoadComponents vueLazyLoadComponents[]
+  instances             instances                         @relation(fields: [instanceId], references: [id])
+  vueLazyLoadMetrics    vueLazyLoadMetrics[]
+  vueLazyLoadRules      vueLazyLoadRules[]
+}
+
+model vueLazyLoadDependencies {
+  id                    String                       @id
+  componentId           String
+  name                  String
+  type                  vueLazyLoadDependencies_type
+  preload               Boolean                      @default(false)
+  priority              Int                          @default(0)
+  optional              Boolean                      @default(false)
+  timeout               Int?
+  vueLazyLoadComponents vueLazyLoadComponents        @relation(fields: [componentId], references: [id])
+
+  @@unique([componentId, name])
+  @@index([componentId])
+}
+
+model vueLazyLoadEvents {
+  id                    String                 @id
+  componentId           String
+  type                  vueLazyLoadEvents_type
+  timestamp             DateTime               @default(now())
+  duration              Int?
+  size                  Int?
+  error                 String?                @db.Text
+  retry                 Int                    @default(0)
+  vueLazyLoadComponents vueLazyLoadComponents  @relation(fields: [componentId], references: [id])
+
+  @@index([componentId])
+  @@index([timestamp])
+}
+
+model vueLazyLoadMetrics {
+  id                String            @id
+  configId          String
+  startTime         DateTime
+  endTime           DateTime
+  totalLoads        Int               @default(0)
+  successfulLoads   Int               @default(0)
+  failedLoads       Int               @default(0)
+  avgLoadTime       Int?
+  totalSize         BigInt            @default(0)
+  componentStats    String?           @db.LongText
+  vueLazyLoadConfig vueLazyLoadConfig @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+  @@index([startTime])
+}
+
+model vueLazyLoadRules {
+  id                String                    @id
+  configId          String
+  name              String
+  priority          Int                       @default(0)
+  pattern           String
+  condition         String?                   @db.Text
+  strategy          vueLazyLoadRules_strategy
+  preload           Boolean                   @default(false)
+  timeout           Int?
+  chunkName         String?
+  chunkPriority     Int                       @default(0)
+  vueLazyLoadConfig vueLazyLoadConfig         @relation(fields: [configId], references: [id])
+
+  @@unique([configId, name])
+  @@index([configId])
+}
+
+model vueMiddleware {
+  id         String    @id
+  instanceId String
+  name       String
+  handler    String    @db.Text
+  priority   Int       @default(10)
+  global     Boolean   @default(false)
+  routes     String    @db.LongText
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model vueOptimizationReports {
+  id                   String               @id
+  configId             String
+  totalAssets          Int
+  totalSavings         Int
+  duration             Int
+  imageSummary         String?              @db.LongText
+  jsSummary            String?              @db.LongText
+  cssSummary           String?              @db.LongText
+  fontSummary          String?              @db.LongText
+  timestamp            DateTime             @default(now())
+  vueAssetOptimization vueAssetOptimization @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+  @@index([timestamp])
+}
+
+model vueOptimizedAssets {
+  id                   String                  @id
+  configId             String
+  path                 String
+  type                 vueOptimizedAssets_type
+  originalSize         Int
+  optimizedSize        Int
+  formats              String?                 @db.LongText
+  urls                 String?                 @db.LongText
+  hash                 String
+  timestamp            DateTime                @default(now())
+  vueAssetOptimization vueAssetOptimization    @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+  @@index([type])
+}
+
+model vuePerformanceAlerts {
+  id                   String                    @id
+  configId             String
+  type                 vuePerformanceAlerts_type
+  metric               String
+  threshold            Float
+  value                Float
+  component            String?
+  route                String?
+  timestamp            DateTime                  @default(now())
+  resolved             Boolean                   @default(false)
+  vuePerformanceConfig vuePerformanceConfig      @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+  @@index([timestamp])
+}
+
+model vuePerformanceConfig {
+  id                          String                        @id
+  instanceId                  String                        @unique
+  lcpThreshold                Int                           @default(2500)
+  fidThreshold                Int                           @default(100)
+  clsThreshold                Float                         @default(0.1)
+  ttfbThreshold               Int                           @default(600)
+  fcpThreshold                Int                           @default(1800)
+  enableCodeSplitting         Boolean                       @default(true)
+  enableTreeShaking           Boolean                       @default(true)
+  enableLazyLoading           Boolean                       @default(true)
+  enablePreloading            Boolean                       @default(false)
+  vuePerformanceAlerts        vuePerformanceAlerts[]
+  instances                   instances                     @relation(fields: [instanceId], references: [id])
+  vuePerformanceMetrics       vuePerformanceMetrics[]
+  vuePerformanceOptimizations vuePerformanceOptimizations[]
+  vuePerformanceTraces        vuePerformanceTraces[]
+  vueResourceHints            vueResourceHints[]
+}
+
+model vuePerformanceMetrics {
+  id                   String               @id
+  configId             String
+  lcp                  Int?
+  fid                  Int?
+  cls                  Float?
+  ttfb                 Int?
+  fcp                  Int?
+  tbt                  Int?
+  tti                  Int?
+  componentLoadTime    Int?
+  componentRenderTime  Int?
+  jsSize               Int?
+  cssSize              Int?
+  timestamp            DateTime             @default(now())
+  vueComponentsId      String?
+  vuePerformanceConfig vuePerformanceConfig @relation(fields: [configId], references: [id])
+  vueComponents        vueComponents?       @relation(fields: [vueComponentsId], references: [id])
+
+  @@index([configId])
+  @@index([timestamp])
+  @@index([vueComponentsId], map: "vuePerformanceMetrics_vueComponentsId_fkey")
+}
+
+model vuePerformanceOptimizations {
+  id                   String                             @id
+  configId             String
+  chunkName            String
+  chunkSize            Int
+  loadTime             Int
+  type                 vuePerformanceOptimizations_type
+  status               vuePerformanceOptimizations_status @default(PENDING)
+  beforeSize           Int?
+  afterSize            Int?
+  improvement          Float?
+  vueComponentsId      String?
+  vuePerformanceConfig vuePerformanceConfig               @relation(fields: [configId], references: [id])
+  vueComponents        vueComponents?                     @relation(fields: [vueComponentsId], references: [id])
+
+  @@index([configId])
+  @@index([vueComponentsId], map: "vuePerformanceOptimizations_vueComponentsId_fkey")
+}
+
+model vuePerformanceTraces {
+  id                   String               @id
+  configId             String
+  name                 String
+  duration             Int
+  startTime            DateTime
+  endTime              DateTime
+  component            String?
+  route                String?
+  events               String?              @db.LongText
+  metadata             String?              @db.LongText
+  vuePerformanceConfig vuePerformanceConfig @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+  @@index([startTime])
+}
+
+model vuePlugins {
+  id           String    @id
+  instanceId   String
+  name         String
+  version      String
+  install      String    @db.Text
+  options      String?   @db.LongText
+  dependencies String?   @db.LongText
+  global       Boolean   @default(false)
+  autoInstall  Boolean   @default(true)
+  instances    instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model vueResourceHints {
+  id                   String                  @id
+  configId             String
+  type                 vueResourceHints_type
+  resource             String
+  timing               vueResourceHints_timing @default(IMMEDIATE)
+  priority             Int                     @default(0)
+  crossorigin          Boolean                 @default(false)
+  async                Boolean                 @default(false)
+  vuePerformanceConfig vuePerformanceConfig    @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+}
+
+model vueRouterAnalytics {
+  id         String                    @id
+  instanceId String
+  from       String
+  to         String
+  timestamp  DateTime                  @default(now())
+  duration   Int?
+  type       vueRouterAnalytics_type
+  status     vueRouterAnalytics_status @default(SUCCESS)
+  timing     String?                   @db.LongText
+  instances  instances                 @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model vueRouterConfig {
+  id                  String                @id
+  instanceId          String                @unique
+  mode                vueRouterConfig_mode  @default(HISTORY)
+  base                String?
+  scrollBehavior      String?               @db.LongText
+  lazy                Boolean               @default(true)
+  prefetch            Boolean               @default(true)
+  keepAlive           Boolean               @default(false)
+  maxHistory          Int?
+  vueComponents       vueComponents[]
+  instances           instances             @relation(fields: [instanceId], references: [id])
+  vueRouterGuards     vueRouterGuards[]
+  vueRouterMiddleware vueRouterMiddleware[]
+  vueRouterRoutes     vueRouterRoutes[]
+}
+
+model vueRouterErrors {
+  id         String               @id
+  instanceId String
+  route      String
+  error      String               @db.Text
+  stack      String?              @db.Text
+  timestamp  DateTime             @default(now())
+  type       vueRouterErrors_type
+  metadata   String?              @db.LongText
+  instances  instances            @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model vueRouterGuards {
+  id                   String                 @id
+  configId             String
+  name                 String
+  type                 vueRouterGuards_type
+  handler              String                 @db.Text
+  async                Boolean                @default(false)
+  timeout              Int?
+  vueComponentsId      String?
+  vueRouterConfig      vueRouterConfig        @relation(fields: [configId], references: [id])
+  vueComponents        vueComponents?         @relation(fields: [vueComponentsId], references: [id])
+  vueRouterRouteGuards vueRouterRouteGuards[]
+
+  @@unique([configId, name])
+  @@index([configId])
+  @@index([vueComponentsId], map: "vueRouterGuards_vueComponentsId_fkey")
+}
+
+model vueRouterMiddleware {
+  id                       String                     @id
+  configId                 String
+  name                     String
+  handler                  String                     @db.Text
+  priority                 Int                        @default(0)
+  global                   Boolean                    @default(false)
+  async                    Boolean                    @default(false)
+  vueRouterConfig          vueRouterConfig            @relation(fields: [configId], references: [id])
+  vueRouterRouteMiddleware vueRouterRouteMiddleware[]
+
+  @@unique([configId, name])
+  @@index([configId])
+}
+
+model vueRouterRouteGuards {
+  id              String          @id
+  routeId         String
+  guardId         String
+  options         String?         @db.LongText
+  vueRouterGuards vueRouterGuards @relation(fields: [guardId], references: [id])
+  vueRouterRoutes vueRouterRoutes @relation(fields: [routeId], references: [id])
+
+  @@unique([routeId, guardId])
+  @@index([guardId])
+  @@index([routeId])
+}
+
+model vueRouterRouteMiddleware {
+  id                  String              @id
+  routeId             String
+  middlewareId        String
+  options             String?             @db.LongText
+  vueRouterMiddleware vueRouterMiddleware @relation(fields: [middlewareId], references: [id])
+  vueRouterRoutes     vueRouterRoutes     @relation(fields: [routeId], references: [id])
+
+  @@unique([routeId, middlewareId])
+  @@index([middlewareId])
+  @@index([routeId])
+}
+
+model vueRouterRoutes {
+  id                       String                     @id
+  configId                 String
+  path                     String
+  name                     String?
+  component                String
+  meta                     String?                    @db.LongText
+  props                    Boolean                    @default(false)
+  parentId                 String?
+  lazy                     Boolean                    @default(true)
+  chunk                    String?
+  vueComponentsId          String?
+  vueRouterRouteGuards     vueRouterRouteGuards[]
+  vueRouterRouteMiddleware vueRouterRouteMiddleware[]
+  vueRouterConfig          vueRouterConfig            @relation(fields: [configId], references: [id])
+  vueRouterRoutes          vueRouterRoutes?           @relation("vueRouterRoutesTovueRouterRoutes", fields: [parentId], references: [id])
+  other_vueRouterRoutes    vueRouterRoutes[]          @relation("vueRouterRoutesTovueRouterRoutes")
+  vueComponents            vueComponents?             @relation(fields: [vueComponentsId], references: [id])
+
+  @@unique([configId, path])
+  @@index([configId])
+  @@index([parentId])
+  @@index([vueComponentsId], map: "vueRouterRoutes_vueComponentsId_fkey")
+}
+
+model vueRoutes {
+  id              String      @id
+  instanceId      String
+  path            String
+  name            String?
+  component       String
+  meta            String?     @db.LongText
+  props           String?     @db.LongText
+  parentId        String?
+  beforeEnter     String?     @db.Text
+  instances       instances   @relation(fields: [instanceId], references: [id])
+  vueRoutes       vueRoutes?  @relation("vueRoutesTovueRoutes", fields: [parentId], references: [id])
+  other_vueRoutes vueRoutes[] @relation("vueRoutesTovueRoutes")
+
+  @@index([instanceId])
+  @@index([parentId])
+}
+
+model vueServerPropLogs {
+  id            String                 @id
+  instanceId    String
+  componentId   String?
+  type          vueServerPropLogs_type
+  message       String                 @db.Text
+  metadata      String?                @db.LongText
+  timestamp     DateTime               @default(now())
+  vueComponents vueComponents?         @relation(fields: [componentId], references: [id])
+  instances     instances              @relation(fields: [instanceId], references: [id])
+
+  @@index([componentId])
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model vueServerPropMiddleware {
+  id         String                        @id
+  instanceId String
+  name       String
+  handler    String                        @db.Text
+  priority   Int                           @default(0)
+  phase      vueServerPropMiddleware_phase
+  condition  String?                       @db.Text
+  instances  instances                     @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model vueServerPropSources {
+  id         String                         @id
+  instanceId String
+  name       String
+  type       vueServerPropSources_type
+  config     String                         @db.LongText
+  timeout    Int                            @default(5000)
+  retries    Int                            @default(3)
+  fallback   String?                        @db.LongText
+  errorMode  vueServerPropSources_errorMode @default(THROW)
+  instances  instances                      @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model vueServerPropTransforms {
+  id             String         @id
+  propId         String
+  transform      String         @db.Text
+  order          Int            @default(0)
+  vueServerProps vueServerProps @relation(fields: [propId], references: [id])
+
+  @@index([propId])
+}
+
+model vueServerPropValidations {
+  id             String         @id
+  propId         String
+  rule           String         @db.Text
+  message        String         @db.Text
+  priority       Int            @default(0)
+  vueServerProps vueServerProps @relation(fields: [propId], references: [id])
+
+  @@index([propId])
+}
+
+model vueServerProps {
+  id                       String                     @id
+  instanceId               String
+  componentId              String
+  name                     String
+  type                     vueServerProps_type
+  isRequired               Boolean                    @default(false)
+  default                  String?                    @db.LongText
+  fetchConfig              String?                    @db.LongText
+  fetchMode                vueServerProps_fetchMode   @default(STATIC)
+  cacheTime                Int?
+  revalidate               Boolean                    @default(false)
+  vueServerPropTransforms  vueServerPropTransforms[]
+  vueServerPropValidations vueServerPropValidations[]
+  vueComponents            vueComponents              @relation(fields: [componentId], references: [id])
+  instances                instances                  @relation(fields: [instanceId], references: [id])
+
+  @@unique([componentId, name])
+  @@index([instanceId])
+}
+
+model vueStateHistory {
+  id                String            @id
+  stateId           String            @unique
+  maxSize           Int               @default(10)
+  persistent        Boolean           @default(false)
+  snapshots         String            @db.LongText
+  timestamp         DateTime          @default(now())
+  vueComponentState vueComponentState @relation(fields: [stateId], references: [id])
+}
+
+model vueStateSync {
+  id         String            @id
+  instanceId String
+  source     String
+  target     String
+  type       vueStateSync_type @default(TWO_WAY)
+  transform  String?           @db.Text
+  reverse    String?           @db.Text
+  deep       Boolean           @default(false)
+  immediate  Boolean           @default(true)
+  instances  instances         @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+}
+
+model vueStateValidation {
+  id                String            @id
+  stateId           String            @unique
+  rules             String            @db.LongText
+  messages          String?           @db.LongText
+  immediate         Boolean           @default(true)
+  debounce          Int?
+  vueComponentState vueComponentState @relation(fields: [stateId], references: [id])
+}
+
+model vueStateWatchers {
+  id                String                 @id
+  stateId           String
+  name              String
+  handler           String                 @db.Text
+  deep              Boolean                @default(false)
+  immediate         Boolean                @default(false)
+  flush             vueStateWatchers_flush @default(PRE)
+  onError           String?                @db.Text
+  vueComponentsId   String?
+  vueComponentState vueComponentState      @relation(fields: [stateId], references: [id])
+  vueComponents     vueComponents?         @relation(fields: [vueComponentsId], references: [id])
+
+  @@unique([stateId, name])
+  @@index([stateId])
+  @@index([vueComponentsId], map: "vueStateWatchers_vueComponentsId_fkey")
+}
+
+model vueStoreActions {
+  id              String          @id
+  moduleId        String
+  name            String
+  code            String          @db.Text
+  async           Boolean         @default(true)
+  errorHandler    String?         @db.Text
+  retry           String?         @db.LongText
+  vueStoreModules vueStoreModules @relation(fields: [moduleId], references: [id])
+
+  @@unique([moduleId, name])
+  @@index([moduleId])
+}
+
+model vueStoreAnalytics {
+  id         String                 @id
+  instanceId String
+  type       vueStoreAnalytics_type
+  path       String
+  payload    String?                @db.LongText
+  timestamp  DateTime               @default(now())
+  instances  instances              @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model vueStoreConfig {
+  id                    String                  @id
+  instanceId            String                  @unique
+  type                  vueStoreConfig_type     @default(PINIA)
+  strict                Boolean                 @default(true)
+  devtools              Boolean                 @default(true)
+  persist               Boolean                 @default(false)
+  lazy                  Boolean                 @default(false)
+  instances             instances               @relation(fields: [instanceId], references: [id])
+  vueStoreDevtools      vueStoreDevtools?
+  vueStoreModules       vueStoreModules[]
+  vueStorePersistence   vueStorePersistence[]
+  vueStorePlugins       vueStorePlugins[]
+  vueStoreSubscriptions vueStoreSubscriptions[]
+}
+
+model vueStoreDevtools {
+  id             String         @id
+  configId       String         @unique
+  enabled        Boolean        @default(true)
+  custom         Boolean        @default(false)
+  mutationLabels String?        @db.LongText
+  actionLabels   String?        @db.LongText
+  vueStoreConfig vueStoreConfig @relation(fields: [configId], references: [id])
+}
+
+model vueStoreGetters {
+  id              String          @id
+  moduleId        String
+  name            String
+  code            String          @db.Text
+  cached          Boolean         @default(true)
+  dependencies    String?         @db.LongText
+  vueStoreModules vueStoreModules @relation(fields: [moduleId], references: [id])
+
+  @@unique([moduleId, name])
+  @@index([moduleId])
+}
+
+model vueStoreModules {
+  id                String                     @id
+  name              String
+  namespaced        Boolean                    @default(true)
+  storeId           String
+  configId          String
+  state             String?                    @db.LongText
+  hydration         vueStoreModules_hydration?
+  gettersConfig     String?                    @db.LongText
+  mutationsConfig   String?                    @db.LongText
+  actionsConfig     String?                    @db.LongText
+  vueStoreActions   vueStoreActions[]
+  vueStoreGetters   vueStoreGetters[]
+  vueStoreConfig    vueStoreConfig             @relation(fields: [configId], references: [id])
+  vueStores         vueStores                  @relation(fields: [storeId], references: [id])
+  vueStoreMutations vueStoreMutations[]
+
+  @@unique([configId, name])
+  @@unique([storeId, name])
+  @@index([configId])
+  @@index([storeId])
+}
+
+model vueStoreMutations {
+  id              String          @id
+  moduleId        String
+  name            String
+  code            String          @db.Text
+  validation      String?         @db.LongText
+  silent          Boolean         @default(false)
+  vueStoreModules vueStoreModules @relation(fields: [moduleId], references: [id])
+
+  @@unique([moduleId, name])
+  @@index([moduleId])
+}
+
+model vueStorePersistence {
+  id             String                      @id
+  configId       String
+  paths          String                      @db.LongText
+  storage        vueStorePersistence_storage
+  serialize      String?                     @db.Text
+  deserialize    String?                     @db.Text
+  vueStoreConfig vueStoreConfig              @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+}
+
+model vueStorePlugins {
+  id             String         @id
+  configId       String
+  name           String
+  code           String         @db.Text
+  enabled        Boolean        @default(true)
+  options        String?        @db.LongText
+  vueStoresId    String?
+  vueStoreConfig vueStoreConfig @relation(fields: [configId], references: [id])
+  vueStores      vueStores?     @relation(fields: [vueStoresId], references: [id])
+
+  @@unique([configId, name])
+  @@index([configId])
+  @@index([vueStoresId], map: "vueStorePlugins_vueStoresId_fkey")
+}
+
+model vueStoreSubscriptions {
+  id             String         @id
+  configId       String
+  pattern        String
+  handler        String         @db.Text
+  prepend        Boolean        @default(false)
+  deep           Boolean        @default(false)
+  vueStoreConfig vueStoreConfig @relation(fields: [configId], references: [id])
+
+  @@index([configId])
+}
+
+model vueStores {
+  id              String            @id
+  instanceId      String
+  name            String
+  type            vueStores_type    @default(PINIA)
+  state           String            @db.LongText
+  getters         String?           @db.LongText
+  mutations       String?           @db.LongText
+  actions         String?           @db.LongText
+  persistence     Boolean           @default(false)
+  hydration       Boolean           @default(true)
+  vueStoreModules vueStoreModules[]
+  vueStorePlugins vueStorePlugins[]
+  instances       instances         @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model webhooks {
+  id            String    @id
+  instanceId    String
+  name          String
+  url           String
+  description   String?   @db.Text
+  event         String
+  isActive      Boolean   @default(true)
+  secret        String?
+  headers       String?   @db.LongText
+  method        String    @default("POST")
+  contentType   String    @default("application/json")
+  timeout       Int       @default(30000)
+  retryCount    Int       @default(3)
+  retryDelay    Int       @default(60)
+  payloadFormat String?   @db.LongText
+  filters       String?   @db.LongText
+  successCount  Int       @default(0)
+  failureCount  Int       @default(0)
+  lastSuccess   DateTime?
+  lastFailure   DateTime?
+  lastPayload   String?   @db.LongText
+  lastResponse  String?   @db.LongText
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  lastTriggered DateTime?
+  instances     instances @relation(fields: [instanceId], references: [id])
+
+  @@index([event])
+  @@index([instanceId])
+  @@index([isActive])
+}
+
+model wsAnalytics {
+  id         String    @id
+  instanceId String
+  event      String
+  count      Int
+  timestamp  DateTime  @default(now())
+  metadata   String?   @db.LongText
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@index([event])
+  @@index([instanceId])
+  @@index([timestamp])
+}
+
+model wsAuthTokens {
+  id         String    @id
+  instanceId String
+  token      String    @unique
+  userId     String?
+  expiresAt  DateTime
+  metadata   String?   @db.LongText
+  instances  instances @relation(fields: [instanceId], references: [id])
+  users      users?    @relation(fields: [userId], references: [id])
+
+  @@index([expiresAt])
+  @@index([instanceId])
+  @@index([userId])
+}
+
+model wsChannelAuth {
+  id             String    @id
+  instanceId     String
+  channelPattern String
+  roles          String    @db.LongText
+  rules          String    @db.LongText
+  instances      instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, channelPattern])
+  @@index([instanceId])
+}
+
+model wsChannels {
+  id              String            @id
+  instanceId      String
+  name            String
+  type            String
+  metadata        String?           @db.LongText
+  createdAt       DateTime          @default(now())
+  instances       instances         @relation(fields: [instanceId], references: [id])
+  wsMessages      wsMessages[]
+  wsPresence      wsPresence[]
+  wsSubscriptions wsSubscriptions[]
+
+  @@unique([instanceId, name])
+  @@index([instanceId])
+}
+
+model wsConnections {
+  id              String            @id
+  instanceId      String
+  userId          String?
+  clientId        String            @unique @db.VarChar(255)
+  status          String            @default("connected")
+  metadata        String?           @db.LongText
+  connectedAt     DateTime          @default(now())
+  lastPingAt      DateTime          @default(now())
+  instances       instances         @relation(fields: [instanceId], references: [id])
+  users           users?            @relation(fields: [userId], references: [id])
+  wsMessages      wsMessages[]
+  wsPresence      wsPresence?
+  wsSubscriptions wsSubscriptions[]
+
+  @@index([instanceId])
+  @@index([userId])
+}
+
+model wsEventHandlers {
+  id         String    @id
+  instanceId String
+  event      String
+  handler    String    @db.Text
+  isActive   Boolean   @default(true)
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, event])
+  @@index([instanceId])
+}
+
+model wsMessages {
+  id            String        @id
+  connectionId  String
+  channelId     String
+  event         String
+  data          String        @db.LongText
+  metadata      String?       @db.LongText
+  sentAt        DateTime      @default(now())
+  wsChannels    wsChannels    @relation(fields: [channelId], references: [id])
+  wsConnections wsConnections @relation(fields: [connectionId], references: [id])
+
+  @@index([channelId])
+  @@index([connectionId])
+  @@index([event])
+}
+
+model wsPresence {
+  id            String        @id
+  connectionId  String        @unique
+  channelId     String
+  userData      String        @db.LongText
+  lastSeenAt    DateTime      @default(now())
+  wsChannels    wsChannels    @relation(fields: [channelId], references: [id])
+  wsConnections wsConnections @relation(fields: [connectionId], references: [id])
+
+  @@index([channelId])
+  @@index([connectionId])
+}
+
+model wsRateLimits {
+  id         String    @id
+  instanceId String
+  event      String
+  limit      Int
+  window     Int
+  instances  instances @relation(fields: [instanceId], references: [id])
+
+  @@unique([instanceId, event])
+  @@index([instanceId])
+}
+
+model wsSubscriptions {
+  id            String        @id
+  connectionId  String
+  channelId     String
+  subscribedAt  DateTime      @default(now())
+  metadata      String?       @db.LongText
+  wsChannels    wsChannels    @relation(fields: [channelId], references: [id])
+  wsConnections wsConnections @relation(fields: [connectionId], references: [id])
+
+  @@unique([connectionId, channelId])
+  @@index([channelId])
+  @@index([connectionId])
+}
+
+enum healthAlerts_type {
+  PERFORMANCE
+  SECURITY
+  AVAILABILITY
+  RESOURCE
+  ERROR
+  BACKUP
+  UPDATE
+}
+
+enum moderationQueue_status {
+  PENDING
+  APPROVED
+  REJECTED
+  SPAM
+  FLAGGED
+  AUTO_REJECTED
+  UNDER_REVIEW
+  EDITED
+  ARCHIVED
+  DELETED
+}
+
+enum vueStoreAnalytics_type {
+  MUTATION
+  ACTION
+  GETTER
+  SUBSCRIPTION
+  PERSISTENCE
+  ERROR
+}
+
+enum FontOptimizationConfig_display {
+  AUTO
+  BLOCK
+  SWAP
+  FALLBACK
+  OPTIONAL
+}
+
+enum vueHydrationEvents_type {
+  START
+  COMPLETE
+  ERROR
+  TIMEOUT
+  DEPENDENCY_LOAD
+  STATE_MERGE
+}
+
+enum vueLazyLoadEvents_type {
+  LOAD_START
+  LOAD_SUCCESS
+  LOAD_ERROR
+  LOAD_TIMEOUT
+  DEPENDENCY_LOAD
+  PREFETCH
+}
+
+enum emailEvents_type {
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  COMPLAINED
+  UNSUBSCRIBED
+  BLOCKED
+}
+
+enum resourceUsage_type {
+  CPU
+  MEMORY
+  DISK
+  BANDWIDTH
+  CONNECTIONS
+  QUERIES
+}
+
+enum vueCdnConfig_provider {
+  CLOUDFLARE
+  AKAMAI
+  FASTLY
+  CLOUDFRONT
+  CUSTOM
+}
+
+enum moderationActions_action {
+  APPROVE
+  REJECT
+  FLAG
+  DELETE
+  WARN_USER
+  BAN_USER
+  MARK_SPAM
+  EDIT
+  RESTORE
+}
+
+enum backupNotifications_type {
+  SUCCESS
+  FAILURE
+  WARNING
+  STORAGE_LOW
+  RETENTION_CLEANUP
+}
+
+enum emailAnalytics_type {
+  OPENS
+  CLICKS
+  BOUNCES
+  COMPLAINTS
+  DELIVERIES
+}
+
+enum vuePerformanceAlerts_type {
+  PERFORMANCE
+  SECURITY
+  AVAILABILITY
+  RESOURCE
+  ERROR
+  BACKUP
+  UPDATE
+}
+
+enum securityKeys_keyType {
+  FIDO2
+  U2F
+  PLATFORM
+}
+
+enum vueRouterConfig_mode {
+  HISTORY
+  HASH
+  MEMORY
+}
+
+enum vueResourceHints_type {
+  PRELOAD
+  PREFETCH
+  PRECONNECT
+  PRERENDER
+  DNS_PREFETCH
+}
+
+enum healthReports_type {
+  HEALTH
+  PERFORMANCE
+  SECURITY
+  RESOURCE
+  AUDIT
+}
+
+enum securityPolicies_type {
+  PASSWORD
+  ACCESS
+  RATE_LIMIT
+  IP_FILTERING
+  SESSION
+  API
+}
+
+enum vueCacheStorage_type {
+  MEMORY
+  REDIS
+  MEMCACHED
+  FILE
+  CUSTOM
+}
+
+enum vueStoreConfig_type {
+  PINIA
+  VUEX
+}
+
+enum emailSettings_provider {
+  SMTP
+  SENDGRID
+  MAILGUN
+  AWS_SES
+  MAILCHIMP
+  CUSTOM
+}
+
+enum siteHealth_status {
+  HEALTHY
+  DEGRADED
+  CRITICAL
+  MAINTENANCE
+}
+
+enum healthAlerts_severity {
+  INFO
+  WARNING
+  CRITICAL
+  EMERGENCY
+}
+
+enum vueHydrationSettings_strategy {
+  SYNC
+  ASYNC
+  PROGRESSIVE
+  SELECTIVE
+  ISLANDS
+}
+
+enum rateLimits_type {
+  API
+  RESOURCE
+  ACTION
+  IP
+  WEBSOCKET
+  GRAPHQL
+}
+
+enum vueLazyLoadComponents_strategy {
+  VIEWPORT
+  ROUTE
+  INTERACTION
+  PREFETCH
+  CUSTOM
+}
+
+enum vueLazyLoadConfig_defaultStrategy {
+  VIEWPORT
+  ROUTE
+  INTERACTION
+  PREFETCH
+  CUSTOM
+}
+
+enum commentReports_reason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  INAPPROPRIATE
+  OFFENSIVE
+  PLAGIARISM
+  OTHER
+}
+
+enum userSecurity_twoFactorMethod {
+  AUTHENTICATOR
+  SMS
+  EMAIL
+  SECURITY_KEY
+}
+
+enum vueConfig_mode {
+  DEVELOPMENT
+  PRODUCTION
+  TEST
+}
+
+enum vueComponentCache_strategy {
+  MEMORY
+  LOCAL_STORAGE
+  SESSION_STORAGE
+  INDEXED_DB
+  CUSTOM
+}
+
+enum vueCdnEndpoints_type {
+  STATIC
+  DYNAMIC
+  API
+  MEDIA
+  FONT
+}
+
+enum backupConfigurations_type {
+  FULL
+  DIFFERENTIAL
+  INCREMENTAL
+}
+
+enum vueCacheGroups_strategy {
+  MEMORY
+  LOCAL_STORAGE
+  SESSION_STORAGE
+  INDEXED_DB
+  CUSTOM
+}
+
+enum moderationLogs_action {
+  APPROVE
+  REJECT
+  FLAG
+  DELETE
+  WARN_USER
+  BAN_USER
+  MARK_SPAM
+  EDIT
+  RESTORE
+}
+
+enum securityViolations_type {
+  BRUTE_FORCE
+  INVALID_TOKEN
+  UNAUTHORIZED_ACCESS
+  RATE_LIMIT_EXCEEDED
+  SUSPICIOUS_IP
+  POLICY_VIOLATION
+}
+
+enum backupVerifications_status {
+  PENDING
+  SUCCESS
+  FAILED
+  WARNING
+}
+
+enum vueLazyLoadDependencies_type {
+  COMPONENT
+  STYLE
+  SCRIPT
+  DATA
+  ASSET
+}
+
+enum vueRouterGuards_type {
+  BEFORE_EACH
+  BEFORE_ROUTE
+  AFTER_EACH
+  AFTER_ROUTE
+  RESOLVE
+}
+
+enum vueServerPropSources_type {
+  API
+  DATABASE
+  GRAPHQL
+  GRPC
+  CUSTOM
+}
+
+enum healthChecks_type {
+  UPTIME
+  PERFORMANCE
+  SECURITY
+  DATABASE
+  CACHE
+  STORAGE
+  MEMORY
+  CPU
+  PLUGINS
+  UPDATES
+  SSL
+  DNS
+  BACKUP
+}
+
+enum vueCdnAssets_type {
+  IMAGE
+  JAVASCRIPT
+  CSS
+  FONT
+  MEDIA
+}
+
+enum vueOptimizedAssets_type {
+  IMAGE
+  JAVASCRIPT
+  CSS
+  FONT
+  MEDIA
+}
+
+enum vueStores_type {
+  PINIA
+  VUEX
+}
+
+enum revisionApprovals_status {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_CHANGES
+}
+
+enum vueStorePersistence_storage {
+  MEMORY
+  REDIS
+  MEMCACHED
+  FILE
+  CUSTOM
+}
+
+enum vueServerPropLogs_type {
+  FETCH
+  VALIDATION
+  TRANSFORM
+  ERROR
+  CACHE
+}
+
+enum vueHydrationSettings_mode {
+  FULL
+  PARTIAL
+  LAZY
+  NONE
+}
+
+enum vueCdnPurgeRequests_status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum backupExecutions_status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum customPosts_status {
+  DRAFT
+  PENDING
+  PUBLISHED
+  PRIVATE
+  TRASH
+}
+
+enum vueHydrationQueueItems_status {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRYING
+}
+
+enum revisionMeta_status {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum vueComponentState_type {
+  REACTIVE
+  REF
+  READONLY
+  SHALLOW_REF
+  SHALLOW_REACTIVE
+}
+
+enum moderationRules_type {
+  CONTENT
+  USER
+  FREQUENCY
+  LINKS
+  KEYWORDS
+  CUSTOM
+}
+
+enum securityViolations_severity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum translationJobs_status {
+  PENDING
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+enum revisionSchedules_status {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum vueServerProps_type {
+  STRING
+  NUMBER
+  BOOLEAN
+  OBJECT
+  ARRAY
+  DATE
+  CUSTOM
+}
+
+enum vueStateSync_type {
+  ONE_WAY
+  TWO_WAY
+  ONCE
+}
+
+enum backupRestores_status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+enum healthChecks_status {
+  PASS
+  WARN
+  FAIL
+  ERROR
+}
+
+enum securityAuditLogs_event {
+  LOGIN
+  LOGOUT
+  PASSWORD_CHANGE
+  MFA_CHANGE
+  API_KEY_CREATED
+  API_KEY_DELETED
+  SECURITY_POLICY_CHANGE
+  ACCESS_DENIED
+  SUSPICIOUS_ACTIVITY
+}
+
+enum vueResourceHints_timing {
+  IMMEDIATE
+  IDLE
+  VISIBLE
+  MEDIA
+}
+
+enum customFields_type {
+  TEXT
+  TEXTAREA
+  WYSIWYG
+  NUMBER
+  EMAIL
+  URL
+  DATE
+  TIME
+  DATETIME
+  SELECT
+  MULTISELECT
+  CHECKBOX
+  RADIO
+  FILE
+  IMAGE
+  GALLERY
+  REPEATER
+  FLEXIBLE
+  RELATIONSHIP
+  COLOR
+  MAP
+  CODE
+  PASSWORD
+}
+
+enum vueHydrationQueue_strategy {
+  FIFO
+  LIFO
+  PRIORITY
+}
+
+enum revisionChanges_changeType {
+  CREATED
+  UPDATED
+  DELETED
+  MOVED
+  RESTORED
+}
+
+enum vueComponentState_scope {
+  LOCAL
+  SHARED
+  GLOBAL
+  PERSISTENT
+}
+
+enum vueCdnRules_action {
+  CACHE
+  BYPASS
+  REDIRECT
+  REWRITE
+  BLOCK
+}
+
+enum emailSends_status {
+  QUEUED
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+  SPAM
+  BLOCKED
+}
+
+enum apiKeys_type {
+  READ
+  WRITE
+  ADMIN
+  WEBHOOK
+  INTEGRATION
+}
+
+enum vueCdnAssets_status {
+  PENDING
+  UPLOADING
+  PROCESSING
+  ACTIVE
+  FAILED
+  PURGED
+}
+
+enum vueServerPropMiddleware_phase {
+  BEFORE_FETCH
+  AFTER_FETCH
+  BEFORE_TRANSFORM
+  AFTER_TRANSFORM
+}
+
+enum vuePerformanceOptimizations_type {
+  CODE_SPLITTING
+  TREE_SHAKING
+  LAZY_LOADING
+  MINIFICATION
+  COMPRESSION
+  IMAGE_OPTIMIZATION
+}
+
+enum rateLimits_action {
+  BLOCK
+  THROTTLE
+  DELAY
+  NOTIFY
+  LOG
+}
+
+enum commentReports_status {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  INVALID
+  DUPLICATE
+}
+
+enum vueStateWatchers_flush {
+  PRE
+  POST
+  SYNC
+}
+
+enum vueEffects_flush {
+  PRE
+  POST
+  SYNC
+}
+
+enum vueRouterErrors_type {
+  NAVIGATION
+  GUARD
+  MIDDLEWARE
+  COMPONENT
+  CHUNK_LOAD
+}
+
+enum vueLazyLoadRules_strategy {
+  VIEWPORT
+  ROUTE
+  INTERACTION
+  PREFETCH
+  CUSTOM
+}
+
+enum vueRouterAnalytics_type {
+  INITIAL
+  PUSH
+  REPLACE
+  BACK
+  FORWARD
+}
+
+enum vueStoreModules_hydration {
+  NONE
+  SSR
+  LOCAL
+  REMOTE
+}
+
+enum vuePerformanceOptimizations_status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum translationJobItems_status {
+  PENDING
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+enum emailTemplates_category {
+  SYSTEM
+  MARKETING
+  TRANSACTIONAL
+  NEWSLETTER
+  AUTOMATED
+  CUSTOM
+}
+
+enum vueImageProfiles_fit {
+  CONTAIN
+  COVER
+  FILL
+  INSIDE
+  OUTSIDE
+}
+
+enum backupConfigurations_storage {
+  LOCAL
+  S3
+  FTP
+  SFTP
+  GDRIVE
+  DROPBOX
+}
+
+enum vueImageProcessingQueue_status {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum vueRouterAnalytics_status {
+  SUCCESS
+  FAILED
+  CANCELLED
+  PENDING
+}
+
+enum languages_direction {
+  LTR
+  RTL
+}
+
+enum vueServerProps_fetchMode {
+  STATIC
+  SSR
+  ISR
+  HYBRID
+}
+
+enum vueServerPropSources_errorMode {
+  THROW
+  FALLBACK
+  SKIP
+}
+
+enum securityAuditLogs_severity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum vueImagePresets_format {
+  JPEG
+  PNG
+  WEBP
+  AVIF
+  GIF
+}
+
+enum healthAlerts_status {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum JsOptimizationConfig_sourceMap {
+  NONE
+  DEVELOPMENT
+  PRODUCTION
+}
+
+enum vueHydrationSettings_stateMode {
+  MERGE
+  REPLACE
+  PRESERVE
+  CUSTOM
+}
+
+enum ImageOptimizationConfig_placeholder {
+  BLUR
+  DOMINANT_COLOR
+  TRACED_SVG
+  NONE
+}
+
+enum vueImageOptimizations_status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
